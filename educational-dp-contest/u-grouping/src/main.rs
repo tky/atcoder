@@ -34,6 +34,7 @@ fn resolve(a: &[Vec<i64>]) -> i64 {
     dp[0] = 0;
 
     for mask in 1..size {
+        // 最初はmaskに含まれるウサギ全員を1つのグループにする
         let mut sub = mask;
 
         while sub > 0 {
@@ -41,6 +42,9 @@ fn resolve(a: &[Vec<i64>]) -> i64 {
             // 残り mask ^ sub は最適に分ける
             dp[mask] = dp[mask].max(dp[mask ^ sub] + score[sub]);
 
+            // bit DP でよく使う部分集合列挙
+            // sub = sub - 1 だけだと、mask に含まれない bit が立った集合まで列挙してしまう
+            // (sub - 1) & mask とすることで、mask の部分集合だけを次々に列挙できる
             sub = (sub - 1) & mask;
         }
     }
