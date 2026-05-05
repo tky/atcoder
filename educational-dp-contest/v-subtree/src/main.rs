@@ -42,6 +42,10 @@ fn resolve(graph: &[Vec<usize>], m: u64) -> Vec<u64> {
     // from_parent[v]:
     // v から見た「親方向」を使う場合の通り数
     // 根には親方向がないので 0
+    // 木は任意の頂点を root にできる
+    // → その仮 root には親がない
+    // → 親方向を使う通り数は 0
+    // → 最初の from_parent は 0
     dfs_all(0, n, 0, graph, m, &dp, &mut ans);
 
     ans
@@ -70,6 +74,9 @@ fn dfs_down(v: usize, parent: usize, graph: &[Vec<usize>], m: u64, dp: &mut [u64
 fn dfs_all(
     v: usize,
     parent: usize,
+    // from_parent:
+    // vからみた「親方向」を使う場合の通り数
+    // vの親側に黒を伸ばす時、親を黒にして、v側以外で連結な黒集合を作る通り数
     from_parent: u64,
     graph: &[Vec<usize>],
     m: u64,
@@ -98,6 +105,7 @@ fn dfs_all(
     }
 
     // ans[v] は全方向の values の積
+    // ans[v] = Π(各方向を使わない or 使う通り数)
     let mut total = 1_u64;
     for &x in &values {
         total = total * x % m;
@@ -105,12 +113,26 @@ fn dfs_all(
     ans[v] = total;
 
     // prefix[i] = values[0] * ... * values[i - 1]
+    // 例
+    // values = [a, b, c, d, e]
+    // prefix[0] = 1
+    // prefix[1] = a
+    // prefix[2] = a * b
+    // prefix[3] = a * b * c
+    // prefix[4] = a * b * c * d
+    // prefix[5] = a * b * c * d * e
     let mut prefix = vec![1_u64; deg + 1];
     for i in 0..deg {
         prefix[i + 1] = prefix[i] * values[i] % m;
     }
 
     // suffix[i] = values[i] * ... * values[deg - 1]
+    // suffix[0] = a * b * c * d * e
+    // suffix[1] = b * c * d * e
+    // suffix[2] = c * d * e
+    // suffix[3] = d * e
+    // suffix[4] = e
+    // suffix[5] = 1
     let mut suffix = vec![1_u64; deg + 1];
     for i in (0..deg).rev() {
         suffix[i] = suffix[i + 1] * values[i] % m;
@@ -130,6 +152,11 @@ fn dfs_all(
         // to 方向以外のすべての方向を自由に使う/使わないできる。
         //
         // よって「to 方向を除いた values の積」が from_parent_for_child になる。
+        // toを除いたnの積の計算
+        // values = [a, b, c, d, e] で、c(i = 2) を覗きたいとする
+        // prefix[2] : a * b
+        // suffix[3]: d * e
+        // よりprefix[i] + suffix[i + 1]
         let next_from_parent = prefix[i] * suffix[i + 1] % m;
 
         dfs_all(to, v, next_from_parent, graph, m, dp, ans);
