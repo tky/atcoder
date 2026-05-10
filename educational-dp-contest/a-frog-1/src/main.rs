@@ -18,6 +18,8 @@ fn resolve(hs: &[usize]) -> usize {
     dp[len - 1]
 }
 
+// 配列DP -> 圧縮DPの基本形
+// dp[i]はdp[i-1]とdp[i-2]がわかれば計算できる
 fn resolve2(hs: &[usize]) -> usize {
     let len = hs.len();
 
