@@ -2,17 +2,23 @@ fn resolve(hs: &[usize], k: usize) -> usize {
     let len = hs.len();
     let k = k.min(len);
 
+    // k個前の足場までの累積最小コスト
     let mut prevs = vec![0; k];
     // prevs[0]: 1つ前からの遷移
     // prevs[1]: 2つ前からの遷移
     // ...
 
     // 初期化
-    // index k - 1 の足場まで到達した状態を作る
-    // prevs[0]: k-1からkへの遷移
-    // prevs[1]: k-2からkへの遷移
+    // 次に i = k を計算できるように、prevs[j] = dp[k - 1 - j] を作る
+    //
+    // prevs[0]     = dp[k - 1]
+    // prevs[1]     = dp[k - 2]
     // ...
-    // kの状態ではk個前からの遷移はないのでk-1までで良い
+    // prevs[k - 2] = dp[1]
+    // prevs[k - 1] = dp[0] = 0  <- k個前はスタート地点なので、そこまでの最小コストは0
+    //
+    // prevs[0] k-1の足場へ行くための最小コスト
+    // prevs[1] k-2の足場へ行くための最小コスト
     for i in 0..(k - 1) {
         prevs[i] = hs[k - 1 - i].abs_diff(hs[0]);
     }
