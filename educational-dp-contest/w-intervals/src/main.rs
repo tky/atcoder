@@ -18,9 +18,10 @@ fn resolve(n: usize, intervals: &[(usize, usize, i64)]) -> i64 {
         // 後半のループで、右端 r の区間について、
         // 条件を満たす状態 dp[j] にスコアを加算する
 
-        //現在、最後の 1 の位置が 0, 1, 2, ..., r-1 の状態の中で最大スコア
-        let best = dp[0..r].iter().copied().max().unwrap();
-        dp[r] = dp[r].max(best);
+        // 現在、最後の 1 の位置が 0, 1, 2, ..., r-1 の状態の中で最大スコア
+        // (右端rの区間を処理した後も最良とは限らない)
+        let best_prev = dp[0..r].iter().copied().max().unwrap();
+        dp[r] = dp[r].max(best_prev);
 
         // 右端が r の区間 [l, r] を処理する
         // 最後の 1 の位置 j が l 以上なら、この区間には 1 がある
