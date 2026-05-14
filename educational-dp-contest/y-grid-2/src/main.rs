@@ -1,3 +1,10 @@
+/**
+ * 1. 全マス DP は H,W が大きすぎて無理
+ * 2. 壁とゴールだけを points に入れる
+ * 3. ways(a,b) は combination で 2点間の経路数を数える
+ * 4. dp[i] は points[i] まで、以前の壁を通らずに来る経路数
+ * 5. 全経路数から、壁を通る経路数を引く
+ */
 use std::io::{self, Read};
 
 const MOD: usize = 1_000_000_007;
