@@ -46,6 +46,9 @@ fn resolve(ds: &[usize]) -> f64 {
     dfs(c1, c2, c3, n, &mut dp)
 }
 
+// ループ順が見えないが、遷移のたびに何かが必ず減るならメモ化 DFS を疑う。
+// 今回は残り寿司数がかならず減少する: i + 2j + 3k
+// そのため無限ループすることはない
 fn dfs(i: usize, j: usize, k: usize, n: usize, dp: &mut Vec<Vec<Vec<f64>>>) -> f64 {
     if i == 0 && j == 0 && k == 0 {
         return 0.0;
