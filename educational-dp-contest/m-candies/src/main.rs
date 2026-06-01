@@ -11,10 +11,7 @@ fn resolve(xs: &[usize], k: usize) -> usize {
         // 一方xsは0-indexなので1人目の上限はxs[0], 2人目の上限はxs[1]
         // dpのiとxsのiでindexが一つずれているように見える
         for j in 0..=k {
-            for l in 0..=xs[i - 1] {
-                if l > j {
-                    break;
-                }
+            for l in 0..=j.min(xs[i - 1]) {
                 dp[i][j] += dp[i - 1][j - l];
             }
         }
