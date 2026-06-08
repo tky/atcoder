@@ -1,19 +1,47 @@
 fn resolve(h: &[u64], aa: &[u64]) -> u64 {
     let len = h.len();
-    // dp[i]: 花iを最後に選ぶ時の美しさの総和の最大値
-    // dp[i] = a_i + max { dp[j] | j < i, h_j < h_i }
-    let mut dp = vec![0u64; len];
+
+    // dp[i]:
+    //   花 i を最後に選ぶときの、美しさの総和の最大値
+    //
+    // 花 i の直前に選べる花 j は、
+    //
+    //   j < i
+    //   h[j] < h[i]
+    //
+    // を満たす必要がある。
+    //
+    // したがって、
+    //
+    //   dp[i] = aa[i] + max(dp[j])
+    //           where j < i and h[j] < h[i]
+    //
+    // 前に選べる花がない場合は、花 i だけを選ぶので aa[i]。
+    let mut dp = vec![0_u64; len];
     dp[0] = aa[0];
 
     for i in 1..len {
-        let mut max = 0u64;
+        let mut max_prev = 0_u64;
+
         for j in 0..i {
-            if max < dp[j] && h[j] < h[i] {
-                max = dp[j];
+            // 花 j は花 i より左にあり、かつ高さも低い。
+            // そのため、花 j を最後に選んだ列の後ろに花 i を追加できる。
+            //
+            // dp[j] は「花 j を最後に選ぶときの美しさ総和の最大値」。
+            // 花 i の前に置ける候補の中で、dp[j] が最大のものを探す。
+            if h[j] < h[i] {
+                max_prev = max_prev.max(dp[j]);
             }
         }
-        dp[i] = aa[i] + max;
+
+        // 花 i を最後に選ぶ。
+        // その前までの最大値 max_prev に、花 i 自身の美しさ aa[i] を足す。
+
+        // 花 i の前に置ける花がない場合、max_prev は 0 のまま。
+        // その場合は、花 i だけを選ぶので dp[i] = aa[i] になる。
+        dp[i] = aa[i] + max_prev;
     }
+
     *dp.iter().max().unwrap()
 }
 
