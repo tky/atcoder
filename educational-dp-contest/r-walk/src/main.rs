@@ -1,3 +1,5 @@
+const MOD: u64 = 1_000_000_007;
+
 fn resolve(k: usize, a: &Vec<Vec<usize>>) -> u64 {
     let len = a.len();
 
@@ -55,9 +57,16 @@ fn resolve(k: usize, a: &Vec<Vec<usize>>) -> u64 {
 }
 
 // メモリ改良版
-// t+1はtしか使わないのでdpは直前だけ持てば良い
+// dp[t + 1] は dp[t] だけから作れるので、
+// dp は直前の状態 cur だけ持てばよい。
 fn resolve2(k: usize, a: &Vec<Vec<usize>>) -> u64 {
     let n = a.len();
+
+    // cur[i][j]:
+    //   現在の長さ t で、i から j へ行く walk の数
+    //
+    // 最初は長さ 0。
+    // 長さ 0 で i から i へ行く walk は「何もしない」1 通り。
     let mut cur = vec![vec![0_u64; n]; n];
     for i in 0..n {
         cur[i][i] = 1;
@@ -65,26 +74,38 @@ fn resolve2(k: usize, a: &Vec<Vec<usize>>) -> u64 {
 
     for _ in 0..k {
         let mut next = vec![vec![0_u64; n]; n];
+
         for i in 0..n {
             for v in 0..n {
                 if cur[i][v] == 0 {
                     continue;
                 }
+
                 for j in 0..n {
-                    next[i][j] = next[i][j] + cur[i][v] * a[v][j] as u64;
+                    // cur[i][v]:
+                    //   長さ t で i から v へ行く walk の数
+                    //
+                    // a[v][j] == 1:
+                    //   v から j へ 1 本の辺で行ける
+                    //
+                    // つまり、
+                    //   i -> ... -> v -> j
+                    // という長さ t + 1 の walk を作れる。
+                    if a[v][j] == 1 {
+                        next[i][j] += cur[i][v];
+                        next[i][j] %= MOD;
+                    }
                 }
             }
         }
+
         cur = next;
     }
 
-    let mut sum = 0;
-    for i in 0..n {
-        for j in 0..n {
-            sum += cur[i][j];
-        }
-    }
-    sum
+    cur.iter()
+        .flatten()
+        .copied()
+        .fold(0_u64, |acc, x| (acc + x) % MOD)
 }
 
 // dp[t+1][i][j] = for(v = 0 to N - 1) {dp[t][i][v]*dp[v][j]}
@@ -97,7 +118,6 @@ fn resolve2(k: usize, a: &Vec<Vec<usize>>) -> u64 {
 // dp[0] = I, dp[1] = A, dp[2] = A^2,,,
 //
 // すなわちこれはA^kを求めればiからへいくパスの数を計算したことになる
-const MOD: u64 = 1_000_000_007;
 
 type Matrix = Vec<Vec<u64>>;
 fn mul(a: &Matrix, b: &Matrix) -> Matrix {
