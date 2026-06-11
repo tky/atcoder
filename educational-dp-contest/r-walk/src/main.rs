@@ -1,10 +1,19 @@
 fn resolve(k: usize, a: &Vec<Vec<usize>>) -> u64 {
     let len = a.len();
 
-    // dp[t][i][j]: 長さtでiからjへいくパスの数
-    // dp[t+1][i][j] = for(v = 0 to N - 1) {dp[t][i][v]*dp[v][j]}
+    // dp[t][i][j]:
+    //   長さ t の walk で、頂点 i から頂点 j へ行く方法数
+    //
+    // dp[t + 1][i][j]:
+    //   長さ t の walk で i から v まで行き、
+    //   最後に辺 v -> j を 1 本追加する
+    //
+    //   dp[t + 1][i][j] += dp[t][i][v] * a[v][j]
+    //
     // dp[0][i][i] = 1
-    let mut dp = vec![vec![vec![0; len]; len]; k + 1];
+    //   長さ 0 の walk は、同じ頂点にとどまる 1 通り
+    let mut dp = vec![vec![vec![0_u64; len]; len]; k + 1];
+
     for i in 0..len {
         dp[0][i][i] = 1;
     }
@@ -13,18 +22,35 @@ fn resolve(k: usize, a: &Vec<Vec<usize>>) -> u64 {
         for i in 0..len {
             for j in 0..len {
                 for v in 0..len {
-                    dp[t + 1][i][j] += dp[t][i][v] * a[v][j] as u64;
+                    // dp[t][i][v]:
+                    //   長さ t で i から v へ行く walk の数
+                    //
+                    // a[v][j] == 1:
+                    //   v から j へ 1 本の辺で行ける
+                    //
+                    // つまり、
+                    //   i -> ... -> v
+                    // という長さ t の walk の後ろに v -> j をつなげることで、
+                    //
+                    //   i -> ... -> v -> j
+                    //
+                    // という長さ t + 1 の i から j への walk を作れる。
+                    // そのため、dp[t][i][v] 通りを dp[t + 1][i][j] に足す。
+                    if a[v][j] == 1 {
+                        dp[t + 1][i][j] += dp[t][i][v];
+                    }
                 }
             }
         }
     }
 
-    let mut sum = 0;
+    let mut sum = 0_u64;
     for i in 0..len {
         for j in 0..len {
             sum += dp[k][i][j];
         }
     }
+
     sum
 }
 
