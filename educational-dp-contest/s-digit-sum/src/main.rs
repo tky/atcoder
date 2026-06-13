@@ -13,6 +13,17 @@ fn resolve(k: &str, d: usize) -> usize {
     // それだとkを超えてしまうのでlessで状態を管理する必要がある
     // 問題が[1,2,3]の集合で作れるDの倍数は何個？
     // だったらdp[r]でよくなるが、この問題は上限があるためdp[r][less]という状態を持つ必要がある
+    //
+    // rは桁和そのものではなく、桁和をDで割ったあまりで良い
+    // 現在の桁和をsumとすると
+    // rem = sum % D
+    // 次の桁 digit を足したときの余りは、
+    // (sum + digit) % D
+    // ここで、sum = D の倍数 + rem
+    // よって
+    // (sum + digit) % D
+    // = (D の倍数 + rem + digit) % D
+    // = (rem + digit) % D
     let mut dp = vec![vec![0usize; 2]; d];
 
     // まだ 1 桁も決めていない状態
