@@ -8,6 +8,15 @@ fn resolve(s: &[char]) -> usize {
 
     for i in 2..=n {
         if s[i - 2] == '<' {
+            // 前の行 dp[i - 1] の累積和を作る。
+            //
+            // pref[k]
+            // = dp[i - 1][0]
+            // + dp[i - 1][1]
+            // + ...
+            // + dp[i - 1][k]
+            //
+            // これにより、前の順位の連続区間の和を O(1) で取得できる。
             let mut pref = vec![0usize; i - 1];
             pref[0] = dp[i - 1][0];
             for k in 1..(i - 1) {
