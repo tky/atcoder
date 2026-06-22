@@ -71,6 +71,13 @@ fn dfs_down(v: usize, parent: usize, graph: &[Vec<usize>], m: u64, dp: &mut [u64
     dp[v] = prod;
 }
 
+// dfs_all:
+//   v を黒に固定したときの木全体での答え ans[v] を計算し、
+//   さらに子へ「親方向を使う場合の通り数」を渡す。
+//
+// from_parent:
+//   v から見た親方向を使う場合の通り数。
+//   つまり、親を黒にして、v 側以外で連結な黒集合を作る通り数。
 fn dfs_all(
     v: usize,
     parent: usize,
@@ -86,18 +93,19 @@ fn dfs_all(
     let deg = graph[v].len();
 
     // values[i]:
-    // v から graph[v][i] 方向について、
-    // 「その方向を使わない or 使う」の合計通り数
+    //   v から graph[v][i] 方向について、
+    //   その方向を使わない 1 通り
+    //   +
+    //   その方向を使う通り数
+    //
+    // 隣接先が親なら、使う通り数は from_parent。
+    // 隣接先が子なら、使う通り数は dp[to]。
     let mut values = vec![0_u64; deg];
 
     for i in 0..deg {
         let to = graph[v][i];
-        let msg = if to == parent {
-            from_parent + 1
-        } else {
-            dp[to] + 1
-        };
-        values[i] = msg % m;
+        let msg = if to == parent { from_parent } else { dp[to] };
+        values[i] = (msg + 1) % m;
     }
 
     // ans[v] は全方向の values の積
@@ -152,7 +160,21 @@ fn dfs_all(
         // values = [a, b, c, d, e] で、c(i = 2) を覗きたいとする
         // prefix[2] : a * b
         // suffix[3]: d * e
-        // よりprefix[i] + suffix[i + 1]
+        // よりprefix[i] * suffix[i + 1]
+        /*
+                v
+              / | \
+             /  |  \
+           to   a   b
+
+        to に渡す値は、
+
+        v を黒にして、
+        a 方向は使う/使わない
+        b 方向は使う/使わない
+        親方向があれば、それも使う/使わない
+        ただし、to 方向だけは除く
+        */
         let next_from_parent = prefix[i] * suffix[i + 1] % m;
 
         dfs_all(to, v, next_from_parent, graph, m, dp, ans);
