@@ -59,12 +59,14 @@ fn dfs_down(v: usize, parent: usize, graph: &[Vec<usize>], m: u64, dp: &mut [u64
         if to == parent {
             continue;
         }
-
+        // 子 to の部分木に関する dp[to] を先に計算する。
+        // dfs_down から戻ってきた時点で、dp[to] は完成している。
         dfs_down(to, v, graph, m, dp);
 
-        // 子 to 方向について
-        // 1. 使わない: 1 通り(その方向は全て白にしなければならないので1通りしかない）
-        // 2. 使う: dp[to] 通り
+        // v を含む連結集合を作るとき、子 to 側については、
+        //   使わない: 1 通り
+        //   使う    : dp[to] 通り
+        // のどちらかを選べる。
         prod = prod * (dp[to] + 1) % m;
     }
 
