@@ -22,12 +22,14 @@ fn resolve(a: &[Vec<i64>]) -> i64 {
         let mut sum = 0_i64;
 
         for i in 0..n {
-            if (mask >> i) & 1 == 0 {
+            // i が mask に含まれていなければ、ペアの片方になれないので飛ばす
+            if !contains(mask, i) {
                 continue;
             }
 
             for j in (i + 1)..n {
-                if (mask >> j) & 1 == 1 {
+                // i も j も mask に含まれているので、同じグループ内のペアとして加算する
+                if contains(mask, j) {
                     sum += a[i][j];
                 }
             }
@@ -69,6 +71,11 @@ fn resolve(a: &[Vec<i64>]) -> i64 {
 
     dp[size - 1]
 }
+
+fn contains(mask: usize, i: usize) -> bool {
+    ((mask >> i) & 1) == 1
+}
+
 fn main() {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input).unwrap();
