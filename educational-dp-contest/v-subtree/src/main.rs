@@ -92,16 +92,12 @@ fn dfs_all(
 
     for i in 0..deg {
         let to = graph[v][i];
-
-        if to == parent {
-            // 親方向
-            values[i] = from_parent + 1;
+        let msg = if to == parent {
+            from_parent + 1
         } else {
-            // 子方向
-            values[i] = dp[to] + 1;
-        }
-
-        values[i] %= m;
+            dp[to] + 1
+        };
+        values[i] = msg % m;
     }
 
     // ans[v] は全方向の values の積
