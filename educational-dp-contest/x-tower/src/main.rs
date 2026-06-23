@@ -48,6 +48,7 @@ fn resolve(blocks: &mut Vec<Block>) -> u64 {
         let v = block.v;
 
         // 同じブロックを複数回使わないため、逆順に回す
+        // 逆順に回すことで現在のブロックを使う前から存在していた塔
         for j in (0..=s).rev() {
             if j + w <= max_weight {
                 dp[j + w] = dp[j + w].max(dp[j] + v);
