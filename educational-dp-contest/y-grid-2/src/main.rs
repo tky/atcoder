@@ -9,11 +9,13 @@ use std::io::{self, Read};
 
 const MOD: usize = 1_000_000_007;
 
+// 繰り返し二乗法
 // base^exp mod MOD を高速に計算する。
 //
 // 普通に base^exp を作ると値が巨大になるので、
 // 掛け算のたびに MOD を取る。
 // 計算量は O(log exp)。
+// 競技プログラミングでは非常によくあるパターン
 fn mod_pow(mut base: usize, mut exp: usize) -> usize {
     let mut result = 1usize;
 
