@@ -21,6 +21,7 @@ fn mod_pow(mut base: usize, mut exp: usize) -> usize {
         if exp % 2 == 1 {
             result = result * base % MOD;
         }
+        // baseを２乗してexpを半分にする
         base = base * base % MOD;
         exp /= 2;
     }
