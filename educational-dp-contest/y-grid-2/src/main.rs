@@ -165,6 +165,10 @@ fn resolve(h: usize, w: usize, walls: &[(usize, usize)]) -> usize {
             //   前半 dp[j] 通りと後半 ways(q, p) 通りを組み合わせるので掛け算
             let through = dp[j] * ways(q, p, &comb) % MOD;
 
+            // MOD を足しても、MOD で割った余りは変わらない
+            // count - through が負になるかもしれないので、先に MOD を足して安全にしている
+            // count - through
+            // count + MOD - through
             count = (count + MOD - through) % MOD;
         }
 
