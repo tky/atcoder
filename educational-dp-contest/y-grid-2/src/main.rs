@@ -23,9 +23,8 @@ fn mod_pow(mut base: usize, mut exp: usize) -> usize {
         if exp % 2 == 1 {
             result = result * base % MOD;
         }
-        // baseを２乗してexpを半分にする
-        base = base * base % MOD;
         exp /= 2;
+        base = base * base % MOD;
     }
 
     result
@@ -74,13 +73,25 @@ struct Comb {
 
 impl Comb {
     fn new(n: usize) -> Self {
+        // フェルマーの小定理
+        // MOD が素数で、x が MOD の倍数でないとき、
+        // x^(MOD - 1) ≡ 1 (mod MOD)
+        // よって
+        // x^(MOD - 1) ≡ 1
+        // x * x^(MOD - 2) ≡ 1
+        // つまり、x^(MOD - 2)はxにかけると1になる値
+        // よって
+        // x の逆元 = x^(MOD - 2)
         let mut fact = vec![1usize; n + 1];
         let mut inv_fact = vec![1usize; n + 1];
 
+        // fact[i] := i! % MOD
         for i in 1..=n {
             fact[i] = fact[i - 1] * i % MOD;
         }
 
+        // inf_fact[n] := fact[n]のMOD上の逆元
+        // inf_fact[n] * fact[n] = 1 mod MOD
         inv_fact[n] = mod_pow(fact[n], MOD - 2);
 
         for i in (1..=n).rev() {
@@ -95,6 +106,9 @@ impl Comb {
             return 0;
         }
 
+        // C(n, r)
+        // = n! / (r! (n-r)!)
+        // = n! * (r!)^{-1} * ((n-r)!)^{-1}
         self.fact[n] * self.inv_fact[r] % MOD * self.inv_fact[n - r] % MOD
     }
 }
