@@ -2,6 +2,8 @@ fn lcs(s: &str, t: &str) -> String {
     let ss = s.chars().collect::<Vec<char>>();
     let ts = t.chars().collect::<Vec<char>>();
 
+    // dp の i, j は「位置」ではなく「先頭から何文字使うか」。
+    // だから dp[i][j] の末尾文字は S[i-1], T[j-1]。
     let mut dp = vec![vec![0; t.len() + 1]; s.len() + 1];
 
     for i in 1..=s.len() {
