@@ -1,3 +1,19 @@
+fn resolve1(hs: &[usize], k: usize) -> usize {
+    let len = hs.len();
+    let mut dp = vec![usize::MAX / 4; len];
+    dp[0] = 0;
+
+    for i in 0..len {
+        for j in 1..=k {
+            if i + j < len {
+                dp[i + j] = dp[i + j].min(dp[i] + hs[i].abs_diff(hs[i + j]));
+            }
+        }
+    }
+
+    dp[len - 1]
+}
+
 fn resolve(hs: &[usize], k: usize) -> usize {
     let len = hs.len();
     let k = k.min(len);
@@ -53,13 +69,32 @@ mod tests {
 
         assert_eq!(resolve(&[10, 30, 40, 50, 20], 3), 30);
     }
+
+    #[test]
+    fn sample1_01() {
+        assert_eq!(resolve1(&[10, 30, 40, 20], 2), 30);
+        assert_eq!(resolve1(&[10, 10], 2), 0);
+        assert_eq!(resolve1(&[30, 10, 60, 10, 50], 2), 40);
+
+        assert_eq!(resolve1(&[10, 30, 40, 50, 20], 3), 30);
+    }
     #[test]
     fn sample_02_k_is_greater_than_n() {
         assert_eq!(resolve(&[10, 30], 100), 20);
     }
 
     #[test]
+    fn sample1_02_k_is_greater_than_n() {
+        assert_eq!(resolve1(&[10, 30], 100), 20);
+    }
+
+    #[test]
     fn k_is_greater_than_n_another_case() {
         assert_eq!(resolve(&[10, 20, 10], 100), 0);
+    }
+
+    #[test]
+    fn k1_is_greater_than_n_another_case() {
+        assert_eq!(resolve1(&[10, 20, 10], 100), 0);
     }
 }
