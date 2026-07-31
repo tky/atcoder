@@ -14,6 +14,24 @@ fn resolve1(hs: &[usize], k: usize) -> usize {
     dp[len - 1]
 }
 
+fn resolve2(hs: &[usize], k: usize) -> usize {
+    let len = hs.len();
+    let mut dp = vec![usize::MAX / 4; len];
+    dp[0] = 0;
+
+    for i in 1..len {
+        for j in 1..=k {
+            if i < j {
+                break;
+            }
+
+            dp[i] = dp[i].min(dp[i - j] + hs[i].abs_diff(hs[i - j]));
+        }
+    }
+    dp[len - 1]
+}
+
+// メモリは少ないが、、実はこちらの方が遅くなる可能性がある
 fn resolve(hs: &[usize], k: usize) -> usize {
     let len = hs.len();
     let k = k.min(len);
@@ -73,10 +91,14 @@ mod tests {
     #[test]
     fn sample1_01() {
         assert_eq!(resolve1(&[10, 30, 40, 20], 2), 30);
+        assert_eq!(resolve2(&[10, 30, 40, 20], 2), 30);
         assert_eq!(resolve1(&[10, 10], 2), 0);
+        assert_eq!(resolve2(&[10, 10], 2), 0);
         assert_eq!(resolve1(&[30, 10, 60, 10, 50], 2), 40);
+        assert_eq!(resolve2(&[30, 10, 60, 10, 50], 2), 40);
 
         assert_eq!(resolve1(&[10, 30, 40, 50, 20], 3), 30);
+        assert_eq!(resolve2(&[10, 30, 40, 50, 20], 3), 30);
     }
     #[test]
     fn sample_02_k_is_greater_than_n() {
