@@ -17,16 +17,18 @@ fn build_graph(n: usize, edges: &Edges) -> Graph {
 
 fn resolve(edges: &Edges, n: usize) -> usize {
     let graph = build_graph(n, edges);
+    // 有向グラフで閉路がないため、トポロジカル順に処理することでDPできる
     let order = topological_sort(&graph);
 
     // 頂点vを終点とする最長パス長
     let mut dp = vec![0_usize; n];
 
-    for &v in order.iter() {
-        for &to in graph[v].iter() {
-            dp[to] = dp[to].max(dp[v] + 1);
+    for from in order {
+        for &to in graph[from].iter() {
+            dp[to] = dp[to].max(dp[from] + 1);
         }
     }
+
     *dp.iter().max().unwrap()
 }
 
