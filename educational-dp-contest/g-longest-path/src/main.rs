@@ -50,8 +50,9 @@ fn resolve(edges: &Edges, n: usize) -> usize {
 fn topological_sort(graph: &Graph) -> Vec<usize> {
     let n = graph.len();
     let mut indegrees = vec![0; n];
-    for i in 0..graph.len() {
-        for &to in graph[i].iter() {
+
+    for g in graph {
+        for &to in g {
             indegrees[to] += 1;
         }
     }
