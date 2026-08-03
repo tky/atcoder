@@ -15,9 +15,12 @@ fn build_graph(n: usize, edges: &Edges) -> Graph {
     g
 }
 
+// DAG = Directed Acyclic Graph
+// = 有向非巡回グラフ
+// = 閉路が存在しない有向グラフ
 fn resolve(edges: &Edges, n: usize) -> usize {
     let graph = build_graph(n, edges);
-    // 有向グラフで閉路がないため、トポロジカル順に処理することでDPできる
+    // DAGなのでトポロジカル順に処理することでDPできる
     let order = topological_sort(&graph);
 
     // 頂点vを終点とする最長パス長
@@ -32,6 +35,18 @@ fn resolve(edges: &Edges, n: usize) -> usize {
     *dp.iter().max().unwrap()
 }
 
+/// Kahn のアルゴリズム
+/// DAG なら、入次数 0 の頂点が少なくとも 1 つある
+/// ↓
+/// その頂点は、他の頂点より前に置いてよい
+/// ↓
+/// その頂点を取り除く
+/// ↓
+/// その頂点から出ている辺も取り除く
+/// ↓
+/// 新しく入次数 0 になった頂点を処理する
+/// ↓
+/// これを繰り返す
 fn topological_sort(graph: &Graph) -> Vec<usize> {
     let n = graph.len();
     let mut indegrees = vec![0; n];
