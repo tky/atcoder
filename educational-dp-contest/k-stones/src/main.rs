@@ -1,25 +1,16 @@
-// 先手が勝つ場合をtrueとしています
-fn resolve(n: usize, ks: &[usize]) -> bool {
-    let mut dp = vec![false; n + 1];
-    dp[0] = false;
+fn resolve(stone_count: usize, moves: &[usize]) -> bool {
+    // dp[i]: 石が i 個ある状態で、手番のプレイヤーが勝てるなら true
+    let mut dp = vec![false; stone_count + 1];
 
-    for i in 1..=n {
-        let mut win = false;
-        for &k in ks {
-            if k <= i {
-                // dp[i]: 石がi個ある状態で、今から手番の人が勝てるか
-                // dp[i - a] は 「自分が a 個取ったあと、石が i-a 個になって、次に手番になる人が勝てるか」
-                // 次に手番になる人が勝てないなら自分が勝ち
-                // dp[i] = ある a <= i について dp[i - a] == false なら true そうでなければ false
-                win |= !dp[i - k];
-                if win {
-                    break;
-                }
-            }
-        }
-        dp[i] = win;
+    for i in 1..=stone_count {
+        // dp[i]: 石がi個ある状態で、今から手番の人が勝てるか
+        // dp[i - a] は 「自分が a 個取ったあと、石が i-a 個になって、次に手番になる人が勝てるか」
+        // 次に手番になる人が勝てないなら自分が勝ち
+        // dp[i] = ある a <= i について dp[i - a] == false なら true そうでなければ false
+        dp[i] = moves.iter().any(|&x| x <= i && !dp[i - x]);
     }
-    dp[n]
+
+    dp[stone_count]
 }
 
 #[cfg(test)]
