@@ -1,6 +1,8 @@
 fn resolve(ps: &[f64]) -> f64 {
     let len = ps.len();
     // i枚のコインを投げたときに表がj枚の確率
+    // N枚のコインの「表の枚数」は 0〜N の N+1通り。
+    // 投げた枚数も 0〜N の N+1通り。
     let mut dp = vec![vec![0.0; len + 1]; len + 1];
 
     dp[0][0] = 1.0;
