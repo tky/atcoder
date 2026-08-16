@@ -54,8 +54,7 @@ fn resolve(xs: &[i64]) -> i64 {
                 //
                 // この時点では「左右をそれぞれ 1 つにするまでのコスト」だけを見る。
                 // 最後に左右を合体するコスト sum(i, j) は、ループ後に足す。
-                let cost = dp[i][k] + dp[k][j];
-                minimum = minimum.min(cost);
+                minimum = minimum.min(dp[i][k] + dp[k][j]);
             }
 
             // 最後に、左右 2 つのスライムを合体する。
