@@ -59,9 +59,11 @@ fn resolve(k: &str, d: usize) -> usize {
                         1
                     } else if digit < limit {
                         1
-                    // less == 0 and digit == limit
-                    // まだKと一致している
                     } else {
+                        // less == 0 の場合、digit の最大値は upper (= limit)
+                        // つまり digit <= limit
+                        // ここでは digit < limit ではなかったので、必ず digit == limit
+                        // まだ K と一致している
                         0
                     };
 
@@ -74,8 +76,12 @@ fn resolve(k: &str, d: usize) -> usize {
         dp = next;
     }
 
-    // dp[0][0] + dp[0][1] は、0 以上 K 以下で桁和が d の倍数の個数
-    // 問題は 1 以上 K 以下なので、0 を除外するために 1 引く
+    // dp[0][0] + dp[0][1] は、0 以上 K 以下で桁和が D の倍数の個数
+    // この DP は "000..." を許している。
+    // 整数 0 の桁和は 0 で、0 % D == 0 なので、"000..." も数えられている。
+    // ただし問題は 1 以上 K 以下なので、0 を除外するために 1 引く。
+    // (dp[0][0] + dp[0][1] - 1) だと負になる可能性があるので、
+    // MOD 演算の定石として、先に MOD を足してから 1 引く。
     (dp[0][0] + dp[0][1] + MOD - 1) % MOD
 }
 
