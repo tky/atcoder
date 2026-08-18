@@ -1,6 +1,10 @@
 const MOD: usize = 1_000_000_007;
 
 fn resolve(s: &[char]) -> usize {
+    // nは不等号の数なので、値はn + 1になる
+    // 例
+    // s = "<>
+    // p[0] < p[i] > p[2]
     let n = s.len() + 1;
 
     let mut dp = vec![vec![0usize; n + 1]; n + 1];
