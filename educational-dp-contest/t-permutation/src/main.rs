@@ -38,6 +38,12 @@ fn resolve(s: &[char]) -> usize {
             // suff[j] = dp[i - 1][j] + dp[i - 1][j + 1] + ... + dp[i - 1][i - 2]
             // suff[i - 2] = dp[i - 1][i - 2]
             // suff[j] = suff[j + 1] + dp[i - 1][j]
+            // 具体例
+            // 例: i = 5 の場合、前回 dp[i - 1] の有効な順位は 0..=3
+            // suff[3] = dp[i - 1][3]
+            // suff[2] = dp[i - 1][2] + dp[i - 1][3]
+            // suff[1] = dp[i - 1][1] + dp[i - 1][2] + dp[i - 1][3]
+            // suff[0] = dp[i - 1][0] + dp[i - 1][1] + dp[i - 1][2] + dp[i - 1][3]
             let mut suff = vec![0usize; i - 1];
 
             suff[i - 2] = dp[i - 1][i - 2];
@@ -48,6 +54,8 @@ fn resolve(s: &[char]) -> usize {
                 if j == i - 1 {
                     dp[i][j] = 0;
                 } else {
+                    // '>' では、新しい値より前の最後の値が大きい必要がある。
+                    // dp[i - 1][j..=(i-2)]はsuffix[j]に保存してある
                     dp[i][j] = suff[j];
                 }
             }
