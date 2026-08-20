@@ -48,7 +48,7 @@ fn resolve(graph: &[Vec<usize>], m: u64) -> Vec<u64> {
     // → 最初の from_parent は 0
     dfs_all(0, n, 0, graph, m, &dp, &mut ans);
 
-    ans
+    ans.to_vec()
 }
 
 fn dfs_down(v: usize, parent: usize, graph: &[Vec<usize>], m: u64, dp: &mut [u64]) {
