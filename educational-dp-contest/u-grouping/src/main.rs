@@ -73,7 +73,7 @@ fn resolve(a: &[Vec<i64>]) -> i64 {
 }
 
 fn contains(mask: usize, i: usize) -> bool {
-    ((mask >> i) & 1) == 1
+    mask & (1 << i) != 0
 }
 
 fn main() {
