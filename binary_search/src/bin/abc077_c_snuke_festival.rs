@@ -16,7 +16,7 @@ fn resolve(tops: &[usize], middles: &[usize], bottoms: &[usize]) -> usize {
 
     for middle in middles {
         let t = binary_search(&tops, middle);
-        let b = binary_search(&bottoms, middle + 1);
+        let b = bottoms.len() - binary_search(&bottoms, middle + 1);
         ans += (t) * (b);
     }
 
