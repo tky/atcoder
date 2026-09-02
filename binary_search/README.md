@@ -23,7 +23,7 @@ cargo test                             # 全問一括テスト
 
 - [ABC231 C - Counting 2](https://atcoder.jp/contests/abc231/tasks/abc231_c)
   — lower_bound そのもの
-- [ABC077 C - Snuke Festival](https://atcoder.jp/contests/abc077/tasks/abc077_c)
+- [ABC077 C - Snuke Festival](https://atcoder.jp/contests/abc077/tasks/arc084_a)
   — 中段を固定して上下を二分探索
 
 ### Step 2: 答えで二分探索(判定問題への言い換え)
