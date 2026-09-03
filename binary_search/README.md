@@ -31,6 +31,12 @@ cargo test                             # 全問一括テスト
   — 区間内の個数 = upper_bound - lower_bound
 - [ABC143 D - Triangles](https://atcoder.jp/contests/abc143/tasks/abc143_d)
   — 2つ固定して3つ目の範囲を二分探索
+- [ABC172 C - Tsundoku](https://atcoder.jp/contests/abc172/tasks/abc172_c)
+  — 累積和の上で二分探索
+- [ABC353 C - Sigma Problem](https://atcoder.jp/contests/abc353/tasks/abc353_c)
+  — 条件を満たすペア数のカウント
+- [ABC330 C - Minimize Abs 2](https://atcoder.jp/contests/abc330/tasks/abc330_c)
+  — 1変数固定 + 最近値探索(境界の両隣)
 
 ### Step 2: 答えで二分探索(判定問題への言い換え)
 
