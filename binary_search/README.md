@@ -25,6 +25,12 @@ cargo test                             # 全問一括テスト
   — lower_bound そのもの
 - [ABC077 C - Snuke Festival](https://atcoder.jp/contests/abc077/tasks/arc084_a)
   — 中段を固定して上下を二分探索
+- [ABC212 C - Min Difference](https://atcoder.jp/contests/abc212/tasks/abc212_c)
+  — 一番近い値を探す(境界の両隣を見る)
+- [ABC248 D - Range Count Query](https://atcoder.jp/contests/abc248/tasks/abc248_d)
+  — 区間内の個数 = upper_bound - lower_bound
+- [ABC143 D - Triangles](https://atcoder.jp/contests/abc143/tasks/abc143_d)
+  — 2つ固定して3つ目の範囲を二分探索
 
 ### Step 2: 答えで二分探索(判定問題への言い換え)
 
