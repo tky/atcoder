@@ -7,7 +7,53 @@
 // 「iだけの式」と「jだけの式」に分離できないか?
 // 分離できれば「値が一致する組の個数」を数える問題になる
 fn resolve(a: &[usize]) -> usize {
-    todo!()
+    let n = a.len();
+    let mut count = 0;
+
+    let mut aj: Vec<usize> = a
+        .iter()
+        .enumerate()
+        .filter_map(|(j, &v)| j.checked_sub(v))
+        .collect();
+
+    aj.sort_unstable();
+
+    // i < jなのでiは最大値の一つ前まで
+    for i in 0..n - 1 {
+        let pos = binary_search(&aj, a[i] + i);
+        let next_pos = binary_search(&aj, a[i] + i + 1);
+        count += next_pos - pos;
+    }
+    count
+}
+
+fn binary_search(vs: &[usize], v: usize) -> usize {
+    let mut left = 0;
+    let mut right = vs.len();
+
+    while left < right {
+        let mid = (left + right) / 2;
+        if vs[mid] < v {
+            left = mid + 1;
+        } else {
+            right = mid;
+        }
+    }
+    left
+}
+
+fn resolve1(a: &[usize]) -> usize {
+    let n = a.len();
+    let mut ans = 0;
+
+    for i in 0..n - 1 {
+        for j in i + 1..n {
+            if j - i == a[i] + a[j] {
+                ans += 1;
+            }
+        }
+    }
+    ans
 }
 
 fn main() {
@@ -32,8 +78,8 @@ mod tests {
     fn sample_03() {
         assert_eq!(
             resolve(&[
-                3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9, 3, 2, 3, 8, 4, 6, 2, 6, 4, 3, 3, 8,
-                3, 2, 7, 9, 5
+                3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9, 3, 2, 3, 8, 4, 6, 2, 6, 4, 3, 3, 8, 3,
+                2, 7, 9, 5
             ]),
             22
         );
