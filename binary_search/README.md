@@ -38,6 +38,15 @@ cargo test                             # 全問一括テスト
 - [ABC330 C - Minimize Abs 2](https://atcoder.jp/contests/abc330/tasks/abc330_c)
   — 1変数固定 + 最近値探索(境界の両隣)
 
+### Step 1.5: 言い換えてから数える(ABC353 Cと同レベル帯)
+
+- [ABC166 E - This Message Will Self-Destruct in 5s](https://atcoder.jp/contests/abc166/tasks/abc166_e)
+  — 条件式をi側とj側に分離して一致カウント
+- [ABC353 D - Another Sigma Problem](https://atcoder.jp/contests/abc353/tasks/abc353_d)
+  — 寄与テクの続編 + mod計算
+- [ABC229 D - Longest X](https://atcoder.jp/contests/abc229/tasks/abc229_d)
+  — 累積和 + 単調性で二分探索(Step 2への橋渡し)
+
 ### Step 2: 答えで二分探索(判定問題への言い換え)
 
 - [ABC146 C - Buy an Integer](https://atcoder.jp/contests/abc146/tasks/abc146_c)
