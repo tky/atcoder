@@ -13,7 +13,19 @@
 // 注意: A*n + B*d(n) は最大 10^9 * 10^9 + ... = 10^18 超で
 // usizeには収まるが、掛け算の途中でXと比較する形に気を付けること
 fn resolve(a: usize, b: usize, x: usize) -> usize {
-    todo!()
+    let mut ok = 0usize;
+    let mut ng = 1_000_000_001usize;
+
+    while ok + 1 < ng {
+        let mid = (ok + ng) / 2;
+        let v = a * mid + b * (mid.to_string().len());
+        if v <= x {
+            ok = mid;
+        } else {
+            ng = mid;
+        }
+    }
+    ok
 }
 
 fn main() {
