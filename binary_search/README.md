@@ -54,6 +54,11 @@ cargo test                             # 全問一括テスト
 - [ABC174 E - Logs](https://atcoder.jp/contests/abc174/tasks/abc174_e)
   — 最小の最大値(答えを決め打ちして判定)
 
+### Step 2.5: 答えで二分探索の練習
+
+- [ABC063 D - Widespread](https://atcoder.jp/contests/abc063/tasks/arc075_b)
+  — 判定問題の設計練習(全体攻撃分を先に差し引く)
+
 ### Step 3: 応用(二分探索 + α)
 
 - [ABC149 E - Handshake](https://atcoder.jp/contests/abc149/tasks/abc149_e)
