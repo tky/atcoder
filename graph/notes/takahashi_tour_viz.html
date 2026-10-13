@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>高橋君ツアー可視化 (abc213_d)</title>
+<style>
+/* レイアウト: 操作盤 → [グラフ | コード] の2カラム → 状態テーブル群。データ表示はすべて等幅 */
+:root{
+  --bg:#f3f6f5;
+  --panel:#ffffff;
+  --fg:#22312e;
+  --muted:#6b817c;
+  --border:#d6dedb;
+  --code-bg:#f7faf9;
+  --hl:#fff3d6;          /* 実行中コード行 */
+  --cur:#d97706;         /* 現在地(popした頂点) */
+  --cur-bg:#fdf0dc;
+  --vis:#2f8a57;         /* visited */
+  --vis-bg:#e3f2e9;
+  --stk:#6d5ae0;         /* stack / origin */
+  --stk-bg:#edeafb;
+  --csr:#0e8a93;         /* cursor */
+  --csr-bg:#e0f2f4;
+  --flash:#ffe29a;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#131a18; --panel:#1b2422; --fg:#e2ebe8; --muted:#8aa39d; --border:#324039;
+    --code-bg:#161e1c; --hl:#4a3a12;
+    --cur:#f5a93e; --cur-bg:#3d2d10;
+    --vis:#55c186; --vis-bg:#1b3a2a;
+    --stk:#a295f5; --stk-bg:#2c2650;
+    --csr:#4fc6cf; --csr-bg:#123a3e;
+    --flash:#6b5518;
+    color-scheme: dark;
+  }
+}
+body{
+  background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+  font-size:13.5px;
+  margin:0; padding:10px 16px 20px;
+  line-height:1.45;
+}
+.wrap{max-width:1100px; margin-inline:auto;}
+header{display:flex; flex-wrap:wrap; align-items:baseline; gap:10px; margin-bottom:8px;}
+h1{font-size:1.05rem; margin:0; text-wrap:balance;}
+.sub{color:var(--muted); font-size:.78rem; margin:0;}
+.sub code{font-family:var(--mono); font-size:.74rem;}
+
+.controls{
+  display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+  background:var(--panel); border:1px solid var(--border); border-radius:10px;
+  padding:6px 10px; margin-bottom:8px;
+}
+.controls button{
+  font:inherit; font-weight:600; color:var(--fg);
+  background:var(--bg); border:1px solid var(--border); border-radius:8px;
+  padding:4px 10px; cursor:pointer;
+}
+.controls button:hover{border-color:var(--csr);}
+.controls button:focus-visible, .controls select:focus-visible, .controls input:focus-visible{
+  outline:2px solid var(--csr); outline-offset:2px;
+}
+.controls button:disabled{opacity:.4; cursor:default;}
+.controls select{
+  font:inherit; color:var(--fg); background:var(--bg);
+  border:1px solid var(--border); border-radius:8px; padding:4px 6px;
+}
+.controls label{font-size:.8rem; color:var(--muted); display:flex; align-items:center; gap:6px;}
+#stepcount{font-family:var(--mono); font-size:.85rem; color:var(--muted); margin-left:auto; font-variant-numeric:tabular-nums;}
+
+.cols{display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,0.9fr); gap:10px; margin-bottom:10px;}
+@media (max-width:820px){ .cols{grid-template-columns:minmax(0,1fr);} }
+
+.panel{
+  background:var(--panel); border:1px solid var(--border); border-radius:10px;
+  padding:8px 12px; min-width:0;
+}
+.panel h2{
+  font-size:.66rem; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--muted); margin:0 0 5px; font-weight:600;
+}
+
+#desc{
+  border-left:3px solid var(--cur);
+  background:var(--cur-bg);
+  border-radius:0 8px 8px 0;
+  padding:4px 10px; margin-bottom:8px;
+  font-size:.85rem; min-height:2.2em;
+}
+#desc code{font-family:var(--mono); font-size:.78rem;}
+
+svg{width:100%; height:auto; max-height:30vh; display:block; margin-inline:auto;}
+.edge{stroke:var(--border); stroke-width:2;}
+.node circle{fill:var(--panel); stroke:var(--muted); stroke-width:1.5;}
+.node.visited circle{fill:var(--vis-bg); stroke:var(--vis);}
+.node.current circle{stroke:var(--cur); stroke-width:3; fill:var(--cur-bg);}
+.node.instack circle{stroke-dasharray:4 3; stroke:var(--stk); stroke-width:2.5;}
+.node text{
+  font-family:var(--mono); font-size:12px; font-weight:600;
+  fill:var(--fg); text-anchor:middle; dominant-baseline:central;
+}
+.originline{stroke:var(--stk); stroke-width:2; fill:none; opacity:.9;}
+
+.legend{display:flex; flex-wrap:wrap; gap:10px; font-size:.68rem; color:var(--muted); margin-top:5px;}
+.legend span{display:inline-flex; align-items:center; gap:5px;}
+.dot{width:12px; height:12px; border-radius:50%; display:inline-block; border:2px solid var(--muted); background:var(--panel);}
+.dot.v{border-color:var(--vis); background:var(--vis-bg);}
+.dot.c{border-color:var(--cur); background:var(--cur-bg);}
+.dot.s{border-color:var(--stk); border-style:dashed;}
+.arrowlegend{width:18px; height:2px; background:var(--stk); display:inline-block;}
+
+pre{
+  font-family:var(--mono); font-size:.7rem; line-height:1.42;
+  background:var(--code-bg); border:1px solid var(--border); border-radius:8px;
+  padding:5px 0; margin:0; overflow-x:auto;
+}
+.cl{display:block; padding:0 10px 0 6px; white-space:pre;}
+.cl .ln{color:var(--muted); opacity:.55; display:inline-block; width:2.2em; text-align:right; margin-right:10px; user-select:none;}
+.cl.hl{background:var(--hl);}
+.cl.cm{opacity:.45;}
+
+.cells{display:flex; flex-wrap:wrap; gap:3px; font-family:var(--mono); font-size:.74rem;}
+.cell{
+  min-width:1.9em; text-align:center; padding:2px 4px;
+  border:1px solid var(--border); border-radius:6px; background:var(--bg);
+  font-variant-numeric:tabular-nums;
+}
+.cell .idx{display:block; font-size:.62rem; color:var(--muted); line-height:1.1;}
+.cell.on{border-color:var(--vis); background:var(--vis-bg); color:var(--vis); font-weight:600;}
+.cell.stk{border-color:var(--stk); background:var(--stk-bg);}
+.cell.top{border-width:2px; font-weight:600;}
+.cell.flash{animation:flash .6s ease-out;}
+@keyframes flash{ 0%{background:var(--flash);} 100%{} }
+@media (prefers-reduced-motion: reduce){ .cell.flash{animation:none;} }
+.empty{color:var(--muted); font-size:.8rem; font-style:italic;}
+.rowlabel{width:4.2em; font-size:.8rem; color:var(--muted); align-self:center;}
+
+.adjrow{
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  padding:2px 6px 12px; border-radius:6px; margin-bottom:1px;
+}
+.adjrow.cur{background:var(--cur-bg); outline:1px solid var(--cur);}
+.adjrow .vlabel{font-family:var(--mono); font-size:.8rem; width:4.5em; color:var(--muted);}
+.adjrow.cur .vlabel{color:var(--cur); font-weight:600;}
+.adjcell{
+  font-family:var(--mono); font-size:.8rem; min-width:1.8em; text-align:center;
+  padding:2px 5px; border:1px solid var(--border); border-radius:5px; background:var(--bg);
+  position:relative;
+}
+.adjcell.done{opacity:.35; text-decoration:line-through;}
+.adjcell.at{border-color:var(--csr); background:var(--csr-bg); color:var(--csr); font-weight:600;}
+.adjcell.at::after{
+  content:"▲ cursor"; position:absolute; top:100%; left:50%; transform:translateX(-50%);
+  font-size:.58rem; color:var(--csr); white-space:nowrap;
+}
+
+.stackwrap{display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+.toplabel{font-size:.7rem; color:var(--stk);}
+
+.grid3{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:10px;}
+.staterow h2{margin-top:7px;}
+
+#tour .cell{border-color:var(--cur); background:var(--cur-bg);}
+.note{font-size:.68rem; color:var(--muted); margin-top:4px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>高橋君ツアー可視化</h1>
+  <p class="sub">
+    <code>abc213_d_takahashi_tour.rs</code> の <code>resolve()</code> を1命令ずつ実行。
+    頂点は <strong>0-indexed</strong>(tour記録時だけ+1)。← / → キー可。
+  </p>
+</header>
+
+<div class="controls">
+  <button id="btn-reset" title="最初に戻る">⏮ 最初</button>
+  <button id="btn-prev">◀ 戻る</button>
+  <button id="btn-play">▶ 再生</button>
+  <button id="btn-next">進む ▶</button>
+  <label>速度
+    <input type="range" id="speed" min="1" max="10" value="4">
+  </label>
+  <label>木
+    <select id="treeselect">
+      <option value="s1">sample_01 (N=4)</option>
+      <option value="s2">sample_02 スター (N=5)</option>
+      <option value="line">一直線 (N=5)</option>
+      <option value="two">二段の木 (N=7)</option>
+    </select>
+  </label>
+  <span id="stepcount"></span>
+</div>
+
+<div id="desc"></div>
+
+<div class="cols">
+  <div class="panel staterow">
+    <h2>グラフ</h2>
+    <div id="graph"></div>
+    <div class="legend">
+      <span><span class="dot c"></span>現在地(pop直後)</span>
+      <span><span class="dot v"></span>visited</span>
+      <span><span class="dot s"></span>stack に積まれている</span>
+      <span><span class="arrowlegend"></span>origin(初到達時の親)</span>
+    </div>
+    <h2>stack</h2>
+    <div class="stackwrap"><div class="cells" id="stack"></div><span class="toplabel" id="toplabel">← top</span></div>
+    <h2>tour(答え・1-indexed)</h2>
+    <div class="cells" id="tour"></div>
+  </div>
+  <div class="panel">
+    <h2>コード(実行中の行)</h2>
+    <pre id="code"></pre>
+  </div>
+</div>
+
+<div class="grid3">
+  <div class="panel">
+    <h2>visited / origin</h2>
+    <div class="cells" id="visited"></div>
+    <div style="height:8px"></div>
+    <div class="cells" id="origin"></div>
+    <p class="note">origin の「—」は初期値 n+1(未到達)。</p>
+  </div>
+  <div class="panel">
+    <h2>隣接リスト g[v] と cursor</h2>
+    <div id="adj"></div>
+    <p class="note">打ち消し線 = cursor が通過済み(二度と見ない)。これが O(N+M) の根拠。</p>
+  </div>
+</div>
+
+</div>
+<script>
+'use strict';
+// ============ Rustコードの写し(1-indexedの辺を受け取り0-indexedで動く) ============
+const TREES = {
+  s1:   { n: 4, edges: [[1,2],[4,2],[3,1]] },
+  s2:   { n: 5, edges: [[1,2],[1,3],[1,4],[1,5]] },
+  line: { n: 5, edges: [[1,2],[2,3],[3,4],[4,5]] },
+  two:  { n: 7, edges: [[1,2],[1,5],[2,3],[2,4],[5,6],[5,7]] },
+};
+
+function buildGraph(n, edges){
+  const g = Array.from({length:n}, () => []);
+  for (const [a,b] of edges){ g[a-1].push(b-1); g[b-1].push(a-1); }
+  for (const l of g) l.sort((x,y)=>x-y);
+  return g;
+}
+
+// resolve() を実行しながら、各「命令」の直後の状態をスナップショットとして記録する
+function simulate(n, edges){
+  const g = buildGraph(n, edges);
+  const visited = Array(n).fill(false);
+  const origin = Array(n).fill(n+1);
+  const cursor = Array(n).fill(0);
+  const stack = [0];
+  const tour = [];
+  const snaps = [];
+
+  const snap = (v, lines, desc, changed) => snaps.push({
+    v,
+    stack: stack.slice(), visited: visited.slice(),
+    origin: origin.slice(), cursor: cursor.slice(), tour: tour.slice(),
+    lines, desc, changed: changed || {},
+  });
+
+  snap(null, [], '初期状態。出発点の都市 <code>0</code> を stack に積んである(<code>let mut stack = vec![0]</code>)。「進む ▶」でループ開始。', {stack:true});
+
+  let guard = 0;
+  while (stack.length > 0 && guard++ < 5000){
+    const v = stack.pop();
+    snap(v, [26], `stack から <code>${v}</code> を pop。現在地は頂点 <code>${v}</code>。`, {stack:true});
+
+    tour.push(v+1);
+    visited[v] = true;
+    snap(v, [27,28], `tour に <code>${v+1}</code>(=v+1)を記録し、<code>visited[${v}] = true</code>。`, {tour:true, visited:v});
+
+    while (cursor[v] < g[v].length && visited[g[v][cursor[v]]]){
+      const u = g[v][cursor[v]];
+      cursor[v] += 1;
+      snap(v, [34,35], `<code>g[${v}][${cursor[v]-1}] = ${u}</code> は訪問済み → <code>cursor[${v}]</code> を <code>${cursor[v]}</code> に進める。このカーソルは二度と戻らない。`, {cursor:v});
+    }
+
+    if (cursor[v] < g[v].length){
+      const next = g[v][cursor[v]];
+      stack.push(next);
+      if (origin[next] > n){
+        origin[next] = v;
+        snap(v, [37,38,39,40,41], `<code>g[${v}][${cursor[v]}] = ${next}</code> は未訪問 → stack に push。初到達なので <code>origin[${next}] = ${v}</code> を記録。`, {stack:true, origin:next});
+      } else {
+        snap(v, [37,38,39,40], `<code>g[${v}][${cursor[v]}] = ${next}</code> は未訪問 → stack に push。<code>origin[${next}]</code> は設定済みなので上書きしない。`, {stack:true});
+      }
+    } else {
+      if (v !== 0){
+        stack.push(origin[v]);
+        snap(v, [43,44,45], `頂点 <code>${v}</code> に未訪問の隣接なし → 来た道 <code>origin[${v}] = ${origin[v]}</code> へ戻る(stack に push)。`, {stack:true});
+      } else {
+        snap(v, [43,44,47], `頂点 <code>0</code> に未訪問の隣接なし。<code>v == 0</code> なので何も積まない。`, {});
+      }
+    }
+  }
+  snap(null, [26], `stack が空 → <code>while let</code> が終了。<code>tour</code>(${tour.length}要素)が答え。`, {});
+  return { g, snaps };
+}
+
+// ============ 木のレイアウト(頂点0を根に、葉に順にx座標を割り当て) ============
+function layoutTree(g, n){
+  const pos = Array(n);
+  let leafX = 0;
+  (function dfs(v, p, d){
+    const ch = g[v].filter(u => u !== p);
+    if (ch.length === 0){ pos[v] = {x: leafX++, y: d}; return; }
+    for (const c of ch) dfs(c, v, d+1);
+    pos[v] = {x: ch.reduce((s,c)=>s+pos[c].x,0)/ch.length, y: d};
+  })(0, -1, 0);
+  return pos;
+}
+
+// ============ 描画 ============
+const CODE_LINES = [
+  [26,'while let Some(v) = stack.pop() {',0],
+  [27,'    tour.push(v + 1);',0],
+  [28,'    visited[v] = true;',0],
+  [29,'',0],
+  [30,'    // 頂点ごとにどこまで読んだか覚えておく',1],
+  [31,'    // 先頭から未訪問のnodeを調べるとO(N^2)になってしまう',1],
+  [34,'    while cursor[v] < g[v].len() && visited[g[v][cursor[v]]] {',0],
+  [35,'        cursor[v] += 1;',0],
+  [36,'    }',0],
+  [37,'    if cursor[v] < g[v].len() {',0],
+  [38,'        let next = g[v][cursor[v]];',0],
+  [39,'        stack.push(next);',0],
+  [40,'        if origin[next] > n {',0],
+  [41,'            origin[next] = v;',0],
+  [42,'        }',0],
+  [43,'    } else {',0],
+  [44,'        if v != 0 {',0],
+  [45,'            stack.push(origin[v]);',0],
+  [46,'        }',0],
+  [47,'    }',0],
+  [48,'}',0],
+];
+
+const $ = id => document.getElementById(id);
+let state = null;   // {n, g, snaps, pos, step}
+let timer = null;
+
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+
+function renderCode(lines){
+  $('code').innerHTML = CODE_LINES.map(([ln, txt, cm]) =>
+    `<span class="cl${lines.includes(ln)?' hl':''}${cm?' cm':''}"><span class="ln">${ln}</span>${esc(txt)}</span>`
+  ).join('');
+}
+
+function renderGraph(s){
+  const {n, g, pos} = state;
+  const UX = 70, UY = 58, R = 13, PAD = 22;
+  const maxX = Math.max(...pos.map(p=>p.x)), maxY = Math.max(...pos.map(p=>p.y));
+  const W = maxX*UX + PAD*2, H = maxY*UY + PAD*2;
+  const px = v => PAD + pos[v].x*UX, py = v => PAD + pos[v].y*UY;
+  const inStack = new Set(s.stack);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="木の状態">`;
+  svg += `<defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 z" fill="var(--stk)"/></marker></defs>`;
+  // 辺
+  for (let v=0; v<n; v++) for (const u of g[v]) if (u>v)
+    svg += `<line class="edge" x1="${px(v)}" y1="${py(v)}" x2="${px(u)}" y2="${py(u)}"/>`;
+  // origin矢印(子→親、辺から少しずらす)
+  for (let u=0; u<n; u++){
+    if (s.origin[u] > n) continue;
+    const p = s.origin[u];
+    const x1=px(u), y1=py(u), x2=px(p), y2=py(p);
+    const dx=x2-x1, dy=y2-y1, len=Math.hypot(dx,dy);
+    const ox=-dy/len*8, oy=dx/len*8;  // 垂直オフセット
+    const sx=x1+dx/len*(R+3)+ox, sy=y1+dy/len*(R+3)+oy;
+    const ex=x1+dx*0.55+ox, ey=y1+dy*0.55+oy;
+    svg += `<line class="originline" x1="${sx}" y1="${sy}" x2="${ex}" y2="${ey}" marker-end="url(#ah)"/>`;
+  }
+  // 頂点
+  for (let v=0; v<n; v++){
+    const cls = ['node'];
+    if (s.visited[v]) cls.push('visited');
+    if (s.v === v) cls.push('current');
+    if (inStack.has(v)) cls.push('instack');
+    svg += `<g class="${cls.join(' ')}"><circle cx="${px(v)}" cy="${py(v)}" r="${R}"/><text x="${px(v)}" y="${py(v)}">${v}</text></g>`;
+  }
+  svg += '</svg>';
+  $('graph').innerHTML = svg;
+}
+
+function cellsHTML(items){
+  return items.map(it =>
+    `<span class="cell${it.cls||''}">${it.idx!==undefined?`<span class="idx">${it.idx}</span>`:''}${it.text}</span>`
+  ).join('') || '<span class="empty">(空)</span>';
+}
+
+function renderState(s){
+  const n = state.n;
+  // stack
+  $('stack').innerHTML = cellsHTML(s.stack.map((v,i)=>({
+    text:v, cls:' stk'+(i===s.stack.length-1?' top':'')+(s.changed.stack&&i===s.stack.length-1?' flash':'')
+  })));
+  $('toplabel').hidden = s.stack.length === 0;
+  // tour
+  $('tour').innerHTML = cellsHTML(s.tour.map((t,i)=>({
+    text:t, cls:(s.changed.tour&&i===s.tour.length-1?' flash':'')
+  })));
+  // visited
+  $('visited').innerHTML = '<span class="rowlabel">visited</span>' +
+    cellsHTML(s.visited.map((b,i)=>({
+      idx:i, text:b?'✓':'·', cls:(b?' on':'')+(s.changed.visited===i?' flash':'')
+    })));
+  // origin
+  $('origin').innerHTML = '<span class="rowlabel">origin</span>' +
+    cellsHTML(s.origin.map((o,i)=>({
+      idx:i, text:o>n?'—':o, cls:(o<=n?' stk':'')+(s.changed.origin===i?' flash':'')
+    })));
+  // 隣接リスト+cursor
+  $('adj').innerHTML = state.g.map((list,v)=>{
+    const cur = s.v === v;
+    const cells = list.map((u,i)=>{
+      let cls = 'adjcell';
+      if (i < s.cursor[v]) cls += ' done';
+      if (i === s.cursor[v]) cls += ' at';
+      return `<span class="${cls}">${u}</span>`;
+    }).join('');
+    return `<div class="adjrow${cur?' cur':''}"><span class="vlabel">g[${v}]</span>${cells || '<span class="empty">(なし)</span>'}</div>`;
+  }).join('');
+}
+
+function render(){
+  const s = state.snaps[state.step];
+  $('desc').innerHTML = s.desc;
+  $('stepcount').textContent = `step ${state.step} / ${state.snaps.length-1}`;
+  renderCode(s.lines);
+  renderGraph(s);
+  renderState(s);
+  $('btn-prev').disabled = state.step === 0;
+  $('btn-next').disabled = state.step === state.snaps.length-1;
+  if (state.step === state.snaps.length-1) stopPlay();
+}
+
+function load(key){
+  stopPlay();
+  const {n, edges} = TREES[key];
+  const {g, snaps} = simulate(n, edges);
+  state = {n, g, snaps, pos: layoutTree(g, n), step: 0};
+  render();
+}
+
+function step(d){
+  state.step = Math.max(0, Math.min(state.snaps.length-1, state.step + d));
+  render();
+}
+
+function stopPlay(){
+  if (timer){ clearInterval(timer); timer = null; }
+  $('btn-play').textContent = '▶ 再生';
+}
+function startPlay(){
+  if (state.step === state.snaps.length-1) state.step = 0;
+  timer = setInterval(()=>{ step(1); }, 1700 - Number($('speed').value)*150);
+  $('btn-play').textContent = '⏸ 停止';
+}
+
+$('btn-next').addEventListener('click', ()=>{ stopPlay(); step(1); });
+$('btn-prev').addEventListener('click', ()=>{ stopPlay(); step(-1); });
+$('btn-reset').addEventListener('click', ()=>{ stopPlay(); state.step=0; render(); });
+$('btn-play').addEventListener('click', ()=>{ timer ? stopPlay() : startPlay(); });
+$('speed').addEventListener('input', ()=>{ if (timer){ clearInterval(timer); startPlay(); } });
+$('treeselect').addEventListener('change', e => load(e.target.value));
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight'){ stopPlay(); step(1); e.preventDefault(); }
+  if (e.key === 'ArrowLeft'){ stopPlay(); step(-1); e.preventDefault(); }
+});
+
+load('s1');
+</script>
+</body>
+</html>
