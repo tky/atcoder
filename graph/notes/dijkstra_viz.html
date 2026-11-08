@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dijkstra 可視化</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --fg: #1f2328; --muted: #6b7280;
+    --line: #d1d5db; --edge: #9ca3af; --edge-label: #6b7280;
+    --accent: #2563eb; --done: #15803d; --done-bg: #bbf7d0;
+    --frontier: #2563eb; --stale: #dc2626; --good: #15803d; --bad: #b45309;
+    --chip: #eef2ff; --shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15181d; --panel: #1e232b; --fg: #e6e8eb; --muted: #9aa3ad;
+      --line: #3a414b; --edge: #5b6470; --edge-label: #9aa3ad;
+      --accent: #60a5fa; --done: #4ade80; --done-bg: #14532d;
+      --frontier: #60a5fa; --stale: #f87171; --good: #4ade80; --bad: #fbbf24;
+      --chip: #273043; --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #15181d; --panel: #1e232b; --fg: #e6e8eb; --muted: #9aa3ad;
+    --line: #3a414b; --edge: #5b6470; --edge-label: #9aa3ad;
+    --accent: #60a5fa; --done: #4ade80; --done-bg: #14532d;
+    --frontier: #60a5fa; --stale: #f87171; --good: #4ade80; --bad: #fbbf24;
+    --chip: #273043; --shadow: none;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font-family: "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+    font-size: 15px; line-height: 1.6;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 20px; margin: 8px 0 2px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+  .cols { display: flex; gap: 16px; flex-wrap: wrap; }
+  .graph-card, .panel {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; box-shadow: var(--shadow);
+  }
+  .graph-card { padding: 8px; flex: 1 1 560px; min-width: 320px; }
+  svg { width: 100%; height: auto; display: block; }
+  .panel { flex: 1 1 320px; min-width: 300px; padding: 14px 16px; }
+  .panel h2 { font-size: 13px; color: var(--muted); margin: 14px 0 6px; font-weight: 600; }
+  .panel h2:first-child { margin-top: 0; }
+  #msg {
+    min-height: 72px; padding: 10px 12px; border-radius: 8px;
+    background: var(--chip); font-size: 14px;
+  }
+  #msg.stale { outline: 2px solid var(--stale); }
+  #msg.done-ev { outline: 2px solid var(--done); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 34px; }
+  .chip {
+    background: var(--chip); border: 1px solid var(--line);
+    border-radius: 999px; padding: 2px 10px; font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+  .chip.head { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  td, th { border: 1px solid var(--line); padding: 3px 8px; text-align: center; font-size: 13px; }
+  th { color: var(--muted); font-weight: 600; }
+  td.fin { background: var(--done-bg); font-weight: 700; }
+  .controls { display: flex; gap: 8px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
+  button {
+    background: var(--panel); color: var(--fg); border: 1px solid var(--line);
+    border-radius: 8px; padding: 6px 14px; font-size: 14px; cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button:disabled { opacity: .4; cursor: default; }
+  #stepno { color: var(--muted); font-size: 13px; margin-left: auto; }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 8px; }
+  /* SVG */
+  .edge { stroke: var(--edge); stroke-width: 2; fill: none; }
+  .edge.good { stroke: var(--good); stroke-width: 3.5; }
+  .edge.bad { stroke: var(--bad); stroke-width: 3.5; }
+  .elabel { fill: var(--edge-label); font-size: 14px; font-weight: 600; }
+  .elabel.good { fill: var(--good); } .elabel.bad { fill: var(--bad); }
+  .node circle { fill: var(--panel); stroke: var(--muted); stroke-width: 2; }
+  .node.inheap circle { stroke: var(--frontier); stroke-width: 3; }
+  .node.done circle { fill: var(--done-bg); stroke: var(--done); stroke-width: 3; }
+  .node.popnow circle { stroke-width: 5; }
+  .node text.id { fill: var(--fg); font-size: 18px; font-weight: 700; text-anchor: middle; dominant-baseline: central; }
+  .node text.dist { fill: var(--accent); font-size: 14px; font-weight: 700; text-anchor: middle; }
+  .node.done text.dist { fill: var(--done); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Dijkstra 可視化 — ABC340 D 入力例1</h1>
+  <div class="sub">
+    水のモデル: 頂点1から水を流す。pop =「次に濡れる頂点はどれ?」、緩和+push =「隣に水が届く予定時刻の予約」、
+    残骸スキップ =「もう濡れてるので古い予約を破り捨てる」。
+  </div>
+  <div class="cols">
+    <div class="graph-card">
+      <svg id="svg" viewBox="0 0 660 430" role="img" aria-label="有向グラフ"></svg>
+    </div>
+    <div class="panel">
+      <h2>いま起きたこと</h2>
+      <div id="msg"></div>
+      <h2>ヒープの中身(小さい順 = 次にpopされる順)</h2>
+      <div class="chips" id="heap"></div>
+      <h2>distances</h2>
+      <table>
+        <tr><th>頂点</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr>
+        <tr id="distrow"><th>値</th><td></td><td></td><td></td><td></td><td></td></tr>
+      </table>
+      <div class="controls">
+        <button id="first">⏮ 最初</button>
+        <button id="prev">◀ 戻る</button>
+        <button id="next">進む ▶</button>
+        <button id="last">最後 ⏭</button>
+        <span id="stepno"></span>
+      </div>
+      <div class="hint">← → キーでも進められます。緑の枠 = 確定、青い輪 = ヒープに予約あり。</div>
+    </div>
+  </div>
+</div>
+<script>
+"use strict";
+// ===== 入力例1 =====
+// stage1: A=100→2, B=200→3 / stage2: A=50→3, B=10→1
+// stage3: A=100→4, B=200→5 / stage4: A=150→5, B=1→2
+const POS = { 1: [95, 90], 2: [300, 150], 3: [320, 330], 4: [530, 130], 5: [560, 350] };
+const EDGES = [
+  { id: 0, a: 1, b: 2, w: 100, c: 28 },
+  { id: 1, a: 1, b: 3, w: 200, c: 95 },
+  { id: 2, a: 2, b: 3, w: 50,  c: -22 },
+  { id: 3, a: 2, b: 1, w: 10,  c: 55 },
+  { id: 4, a: 3, b: 4, w: 100, c: -30 },
+  { id: 5, a: 3, b: 5, w: 200, c: 24 },
+  { id: 6, a: 4, b: 5, w: 150, c: -28 },
+  { id: 7, a: 4, b: 2, w: 1,   c: 42 },
+];
+const R = 24; // 頂点の半径
+
+// ===== Dijkstra を走らせて、1ステップ=1スナップショットで記録 =====
+function buildSteps() {
+  const steps = [];
+  const dist = { 1: 0, 2: Infinity, 3: Infinity, 4: Infinity, 5: Infinity };
+  const done = new Set();
+  let heap = [[0, 1]];
+  const snap = (msg, opt) => steps.push(Object.assign({
+    msg, heap: heap.slice().sort((x, y) => x[0] - y[0]),
+    dist: Object.assign({}, dist), done: new Set(done),
+    edge: null, kind: "", pop: null,
+  }, opt || {}));
+
+  snap("開始。distances[1] = 0 にして (0, 頂点1) をヒープに積む(最初のpushにも印、の距離版)。");
+  while (heap.length > 0) {
+    heap.sort((x, y) => x[0] - y[0]);
+    const top = heap.shift();
+    const d = top[0], v = top[1];
+    if (d > dist[v]) {
+      snap("pop (" + d + ", 頂点" + v + ") → distances[" + v + "] = " + dist[v] +
+        " の方が小さい。これは古い予約(残骸)。ガードが破り捨てて次へ。", { pop: [d, v], kind: "stale" });
+      continue;
+    }
+    done.add(v);
+    snap("pop (" + d + ", 頂点" + v + ") → 確定! まだ濡れていない頂点はどれも予定時刻 ≥ " + d +
+      " で、辺は非負。だから頂点" + v + "にこれより安く着く道はもう現れない。", { pop: [d, v], kind: "done-ev" });
+    for (const e of EDGES) {
+      if (e.a !== v) continue;
+      const nd = d + e.w;
+      if (nd < dist[e.b]) {
+        const old = dist[e.b];
+        dist[e.b] = nd;
+        heap.push([nd, e.b]);
+        snap("緩和成立: 頂点" + v + "→" + e.b + "(辺" + e.w + ")。" + d + " + " + e.w + " = " + nd +
+          (old === Infinity ? "(初めての予約)" : " < " + old + "(予約を前倒し。古い予約は残骸になる)") +
+          " → distances[" + e.b + "] = " + nd + " にして (" + nd + ", 頂点" + e.b + ") を積む。",
+          { edge: e.id, kind: "good" });
+      } else {
+        snap("緩和不成立: 頂点" + v + "→" + e.b + "(辺" + e.w + ")。" + d + " + " + e.w + " = " + nd +
+          " ≥ distances[" + e.b + "] = " + fmt(dist[e.b]) + " → 何もしない。", { edge: e.id, kind: "bad" });
+      }
+    }
+  }
+  snap("ヒープが空 → 終了。distances = [0, 100, 150, 250, 350]。頂点5の答えは350(入力例1と一致)。");
+  return steps;
+}
+function fmt(x) { return x === Infinity ? "∞" : String(x); }
+
+// ===== SVG 描画 =====
+const svg = document.getElementById("svg");
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  (parent || svg).appendChild(e);
+  return e;
+}
+// 矢印マーカー(通常・成立・不成立)
+const defs = el("defs", {});
+[["arr", "var(--edge)"], ["arr-good", "var(--good)"], ["arr-bad", "var(--bad)"]].forEach(function(m) {
+  const mk = el("marker", { id: m[0], viewBox: "0 0 10 10", refX: 9, refY: 5,
+    markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" }, defs);
+  el("path", { d: "M0,0 L10,5 L0,10 z", fill: m[1] }, mk);
+});
+// 辺: 2次ベジェ。c は中点からの法線方向オフセット
+const edgeEls = {}, edgeLabelEls = {};
+for (const e of EDGES) {
+  const p1 = POS[e.a], p2 = POS[e.b];
+  const dx = p2[0] - p1[0], dy = p2[1] - p1[1];
+  const len = Math.hypot(dx, dy);
+  const nx = -dy / len, ny = dx / len; // 法線
+  const cx = (p1[0] + p2[0]) / 2 + nx * e.c, cy = (p1[1] + p2[1]) / 2 + ny * e.c;
+  // 円の縁から出入りさせる
+  const t1 = shrink(p1, [cx, cy], R), t2 = shrink(p2, [cx, cy], R + 4);
+  edgeEls[e.id] = el("path", {
+    d: "M" + t1[0] + "," + t1[1] + " Q" + cx + "," + cy + " " + t2[0] + "," + t2[1],
+    class: "edge", "marker-end": "url(#arr)",
+  });
+  const mx = 0.25 * t1[0] + 0.5 * cx + 0.25 * t2[0];
+  const my = 0.25 * t1[1] + 0.5 * cy + 0.25 * t2[1];
+  edgeLabelEls[e.id] = el("text", { x: mx + nx * 12, y: my + ny * 12,
+    class: "elabel", "text-anchor": "middle" });
+  edgeLabelEls[e.id].textContent = e.w;
+}
+function shrink(from, toward, r) {
+  const dx = toward[0] - from[0], dy = toward[1] - from[1];
+  const len = Math.hypot(dx, dy);
+  return [from[0] + dx / len * r, from[1] + dy / len * r];
+}
+// 頂点
+const nodeEls = {}, nodeDistEls = {};
+for (const v in POS) {
+  const g = el("g", { class: "node" });
+  el("circle", { cx: POS[v][0], cy: POS[v][1], r: R }, g);
+  const t = el("text", { x: POS[v][0], y: POS[v][1], class: "id" }, g);
+  t.textContent = v;
+  nodeDistEls[v] = el("text", { x: POS[v][0], y: POS[v][1] + R + 18, class: "dist" }, g);
+  nodeEls[v] = g;
+}
+
+// ===== 再生 =====
+const steps = buildSteps();
+let cur = 0;
+const msgEl = document.getElementById("msg");
+const heapEl = document.getElementById("heap");
+const distRow = document.getElementById("distrow").getElementsByTagName("td");
+const stepnoEl = document.getElementById("stepno");
+
+function render() {
+  const s = steps[cur];
+  msgEl.textContent = s.msg;
+  msgEl.className = s.kind === "stale" ? "stale" : (s.kind === "done-ev" ? "done-ev" : "");
+  // ヒープ
+  heapEl.innerHTML = "";
+  if (s.heap.length === 0) {
+    const c = document.createElement("span");
+    c.className = "chip"; c.textContent = "(空)";
+    heapEl.appendChild(c);
+  }
+  s.heap.forEach(function(h, i) {
+    const c = document.createElement("span");
+    c.className = "chip" + (i === 0 ? " head" : "");
+    c.textContent = "(" + h[0] + ", 頂点" + h[1] + ")";
+    heapEl.appendChild(c);
+  });
+  // distances
+  for (let v = 1; v <= 5; v++) {
+    const td = distRow[v - 1];
+    td.textContent = fmt(s.dist[v]);
+    td.className = s.done.has(v) ? "fin" : "";
+  }
+  // 頂点の見た目
+  const inHeap = new Set(s.heap.map(function(h) { return h[1]; }));
+  for (let v = 1; v <= 5; v++) {
+    let cls = "node";
+    if (s.done.has(v)) cls += " done";
+    else if (inHeap.has(v)) cls += " inheap";
+    if (s.pop && s.pop[1] === v && s.kind !== "stale") cls += " popnow";
+    nodeEls[v].setAttribute("class", cls);
+    nodeDistEls[v].textContent = fmt(s.dist[v]);
+  }
+  // 辺の見た目
+  for (const e of EDGES) {
+    const hl = s.edge === e.id ? s.kind : "";
+    edgeEls[e.id].setAttribute("class", "edge " + hl);
+    edgeEls[e.id].setAttribute("marker-end", hl ? "url(#arr-" + hl + ")" : "url(#arr)");
+    edgeLabelEls[e.id].setAttribute("class", "elabel " + hl);
+  }
+  stepnoEl.textContent = (cur + 1) + " / " + steps.length;
+  document.getElementById("first").disabled = cur === 0;
+  document.getElementById("prev").disabled = cur === 0;
+  document.getElementById("next").disabled = cur === steps.length - 1;
+  document.getElementById("last").disabled = cur === steps.length - 1;
+}
+function go(i) { cur = Math.max(0, Math.min(steps.length - 1, i)); render(); }
+document.getElementById("first").onclick = function() { go(0); };
+document.getElementById("prev").onclick = function() { go(cur - 1); };
+document.getElementById("next").onclick = function() { go(cur + 1); };
+document.getElementById("last").onclick = function() { go(steps.length - 1); };
+document.addEventListener("keydown", function(ev) {
+  if (ev.key === "ArrowRight") go(cur + 1);
+  if (ev.key === "ArrowLeft") go(cur - 1);
+});
+render();
+</script>
+</body>
+</html>
