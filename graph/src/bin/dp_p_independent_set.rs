@@ -193,6 +193,12 @@ mod tests {
                 brute(n, &edges),
                 "n={n} edges={edges:?}"
             );
+            // 再帰版(resolve1)も三人目として突き合わせる(小さいnなので再帰深度は安全)
+            assert_eq!(
+                resolve1(n, &edges),
+                brute(n, &edges),
+                "再帰版が不一致: n={n} edges={edges:?}"
+            );
         }
     }
 
