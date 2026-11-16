@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>木の直径: 2回走査の証明</title>
+<style>
+  :root {
+    --bg: #f6f5f1;
+    --card: #ffffff;
+    --ink: #26231f;
+    --sub: #6b6560;
+    --line: #e3dfd8;
+    --green: #2e7d32;
+    --orange: #ef6c00;
+    --blue: #1565c0;
+    --red: #c62828;
+    --purple: #6a1b9a;
+    --accent: #8a5a00;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Hiragino Sans", "Noto Sans JP", sans-serif;
+    line-height: 1.9;
+    font-size: 15.5px;
+  }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 26px; line-height: 1.5; margin: 8px 0 4px; }
+  .lede { color: var(--sub); margin: 0 0 28px; }
+  h2 {
+    font-size: 19px; margin: 48px 0 12px; padding-top: 24px;
+    border-top: 1px solid var(--line);
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 18px 20px; margin: 16px 0;
+  }
+  svg { display: block; margin: 8px auto; max-width: 100%; height: auto; }
+  .cap { text-align: center; color: var(--sub); font-size: 13.5px; margin: 4px 0 0; }
+  .eq {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 14.5px; line-height: 2.3;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 14px 18px; margin: 14px 0;
+    overflow-x: auto; white-space: nowrap;
+  }
+  .g { color: var(--green);  font-weight: 700; }
+  .o { color: var(--orange); font-weight: 700; }
+  .b { color: var(--blue);   font-weight: 700; }
+  .r { color: var(--red);    font-weight: 700; }
+  .p { color: var(--purple); font-weight: 700; }
+  .dim { color: #b5aea6; text-decoration: line-through; }
+  .why { color: var(--sub); font-size: 13.5px; }
+  .pt {
+    background: #fdf6e7; border: 1px solid #ecd9ac; border-radius: 12px;
+    padding: 14px 18px; margin: 16px 0;
+  }
+  .pt b { color: var(--accent); }
+  .num {
+    display: inline-block; background: var(--ink); color: var(--bg);
+    border-radius: 999px; width: 22px; height: 22px; text-align: center;
+    line-height: 22px; font-size: 13px; margin-right: 8px; font-weight: 700;
+  }
+  code {
+    background: #efece6; border-radius: 5px; padding: 1px 6px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+  }
+</style>
+</head>
+<body>
+<main>
+
+<h1>なぜ「適当な頂点からの最遠点」は<br>必ず直径の端点なのか</h1>
+<p class="lede">典型90-003 / 木の直径の2回走査が正しい理由。道具は ABC126 D と同じ「合流点での分解」だけ。</p>
+
+<!-- ================================================================ -->
+<h2>0. 何が心配だったのか</h2>
+
+<p>①で頂点1から最遠点 u を探し、②で u からの最遠距離を直径として採用する。この手順が壊れるとしたら、<b>①が「葉だけど、どの最遠ペアにも入らない頂点」を掴んでしまう場合</b>だった。</p>
+
+<div class="card">
+<svg viewBox="0 0 560 210" width="560">
+  <!-- diameter underlay -->
+  <path d="M 60 70 L 460 70" stroke="#f5c6c6" stroke-width="16" stroke-linecap="round" fill="none"/>
+  <!-- edges -->
+  <g stroke="#9c958d" stroke-width="2.5">
+    <line x1="60" y1="70" x2="160" y2="70"/>
+    <line x1="160" y1="70" x2="260" y2="70"/>
+    <line x1="260" y1="70" x2="360" y2="70"/>
+    <line x1="360" y1="70" x2="460" y2="70"/>
+    <line x1="260" y1="70" x2="260" y2="160"/>
+  </g>
+  <!-- nodes -->
+  <g font-size="15" font-weight="700" text-anchor="middle">
+    <g>
+      <circle cx="60"  cy="70" r="16" fill="#fff" stroke="#c62828" stroke-width="2.5"/>
+      <circle cx="160" cy="70" r="16" fill="#fff" stroke="#9c958d" stroke-width="2"/>
+      <circle cx="260" cy="70" r="16" fill="#fff" stroke="#9c958d" stroke-width="2"/>
+      <circle cx="360" cy="70" r="16" fill="#fff" stroke="#9c958d" stroke-width="2"/>
+      <circle cx="460" cy="70" r="16" fill="#fff" stroke="#c62828" stroke-width="2.5"/>
+      <circle cx="260" cy="160" r="16" fill="#fff" stroke="#ef6c00" stroke-width="2.5"/>
+    </g>
+    <text x="60"  y="75">1</text><text x="160" y="75">2</text>
+    <text x="260" y="75">3</text><text x="360" y="75">4</text>
+    <text x="460" y="75">5</text><text x="260" y="165">6</text>
+  </g>
+  <text x="260" y="30" text-anchor="middle" font-size="13" fill="#c62828">直径 1–5(長さ4)</text>
+  <text x="300" y="200" font-size="13" fill="#ef6c00">6 は葉。でも dist(6,1) = dist(6,5) = 3 &lt; 4</text>
+</svg>
+<p class="cap">もし①が 6 を掴んだら、②が返す最遠距離は dist(6,1) = dist(6,5) = <b>3</b> — 本当の直径 4 より小さい誤答になる。だから「①は 6 のような頂点を絶対に掴まない」を証明したい。</p>
+</div>
+
+<p>手描きメモの直感は「6 が最遠になるには枝 3–6 が長くないといけない。でも長くした瞬間、その枝ごと直径に昇格する」だった。以下はこの直感をそのまま不等式にしたもの。</p>
+
+<!-- ================================================================ -->
+<h2>1. 登場人物と、使っていい事実</h2>
+
+<div class="pt">
+<p style="margin:0">
+<b>a–b</b>: 最遠ペア(直径)。長さ <b>D = dist(a,b)</b><br>
+<b>s</b>: 走査①の出発点(どこでもよい)<br>
+<b>u</b>: s からの最遠点(①が掴む頂点)<br>
+<b>m</b>: s から直径経路 a–b への<b>合流点</b> — s から a へ行くにも b へ行くにも、必ず m を通ってから直径の上を走る(木の経路は一意だから)
+</p>
+</div>
+
+<p>使っていい事実は2つだけ。</p>
+<p>
+<span class="num">1</span><b>u は s から最遠</b>: dist(s,u) ≥ dist(s,x) が全頂点 x で成り立つ。特に x = a, b。<br>
+<span class="num">2</span><b>D は全ペアの最大</b>: dist(x,y) ≤ D が全ペアで成り立つ。
+</p>
+<p>ゴールは <b>dist(u,b) ≥ D</b> を示すこと。事実2と合わせれば dist(u,b) = D、つまり「u は b を相方とする最遠ペアの端点」になる。</p>
+
+<p>s→u の経路が直径経路に触れるかどうかで、形は2つしかない。</p>
+
+<!-- ================================================================ -->
+<h2>2. Case 1: s→u の経路が直径に触れる場合</h2>
+
+<p>経路は m で直径に乗り、しばらく直径上を(ここでは a の方向へ)走り、ある点 <b>c</b> で直径を離れて u へ向かう(c = m のこともある)。</p>
+
+<div class="card">
+<svg viewBox="0 0 640 270" width="640">
+  <!-- diameter segments -->
+  <line x1="50"  y1="70" x2="230" y2="70" stroke="#1565c0" stroke-width="6" stroke-linecap="round"/>
+  <line x1="230" y1="70" x2="390" y2="70" stroke="#ef6c00" stroke-width="6" stroke-linecap="round"/>
+  <line x1="390" y1="70" x2="590" y2="70" stroke="#6a1b9a" stroke-width="6" stroke-linecap="round"/>
+  <!-- stem s-m -->
+  <line x1="390" y1="70" x2="390" y2="210" stroke="#2e7d32" stroke-width="6" stroke-linecap="round"/>
+  <!-- branch c-u -->
+  <line x1="230" y1="70" x2="130" y2="200" stroke="#c62828" stroke-width="6" stroke-linecap="round"/>
+  <!-- nodes -->
+  <g font-size="16" font-weight="700" text-anchor="middle">
+    <circle cx="50"  cy="70"  r="17" fill="#fff" stroke="#1565c0" stroke-width="2.5"/>
+    <circle cx="230" cy="70"  r="17" fill="#fff" stroke="#26231f" stroke-width="2.5"/>
+    <circle cx="390" cy="70"  r="17" fill="#fff" stroke="#26231f" stroke-width="2.5"/>
+    <circle cx="590" cy="70"  r="17" fill="#fff" stroke="#6a1b9a" stroke-width="2.5"/>
+    <circle cx="390" cy="210" r="17" fill="#fff" stroke="#2e7d32" stroke-width="2.5"/>
+    <circle cx="130" cy="200" r="17" fill="#fff" stroke="#c62828" stroke-width="2.5"/>
+    <text x="50"  y="75">a</text>
+    <text x="230" y="75">c</text>
+    <text x="390" y="75">m</text>
+    <text x="590" y="75">b</text>
+    <text x="390" y="215">s</text>
+    <text x="130" y="205">u</text>
+  </g>
+  <!-- segment labels -->
+  <g font-size="12.5">
+    <text x="140" y="50" text-anchor="middle" fill="#1565c0">dist(c,a)</text>
+    <text x="310" y="50" text-anchor="middle" fill="#ef6c00">dist(m,c)</text>
+    <text x="490" y="50" text-anchor="middle" fill="#6a1b9a">dist(m,b)</text>
+    <text x="400" y="145" fill="#2e7d32">dist(s,m)</text>
+    <text x="110" y="135" text-anchor="end" fill="#c62828">dist(c,u)</text>
+  </g>
+  <text x="320" y="255" text-anchor="middle" font-size="13" fill="#6b6560">s→u は 緑 → 橙 → 赤 と走る。s→a は 緑 → 橙 → 青。</text>
+</svg>
+</div>
+
+<p>s→u と s→a を、通る線分の色で書き下ろす。</p>
+
+<div class="eq">
+dist(s,u) = <span class="g">dist(s,m)</span> + <span class="o">dist(m,c)</span> + <span class="r">dist(c,u)</span><br>
+dist(s,a) = <span class="g">dist(s,m)</span> + <span class="o">dist(m,c)</span> + <span class="b">dist(c,a)</span>
+</div>
+
+<p><span class="num">1</span>「u は最遠」より dist(s,u) ≥ dist(s,a)。両辺の<b>共通部分(緑と橙)が消える</b>:</p>
+
+<div class="eq">
+<span class="dim">dist(s,m) + dist(m,c)</span> + <span class="r">dist(c,u)</span> ≥ <span class="dim">dist(s,m) + dist(m,c)</span> + <span class="b">dist(c,a)</span><br>
+∴ <span class="r">dist(c,u)</span> ≥ <span class="b">dist(c,a)</span> … (★)
+</div>
+
+<p class="why">(★)が手描きの直感そのもの: <b>u への枝(赤)は、直径の a 側の残り(青)と同じ以上に長い</b>。枝が「直径に昇格できる長さ」になっている。</p>
+
+<p>では u から b までの距離を測る。u→b は赤を戻って c、そこから直径を b まで走るしかない(経路の一意性)。直径 D も c で2つに割れることに注意:</p>
+
+<div class="eq">
+dist(u,b) = <span class="r">dist(c,u)</span> + <span class="o">dist(c,m)</span> + <span class="p">dist(m,b)</span><br>
+D = dist(a,b) = <span class="b">dist(c,a)</span> + <span class="o">dist(c,m)</span> + <span class="p">dist(m,b)</span>
+</div>
+
+<p>2つの式は<b>赤と青しか違わない</b>。そして(★)より 赤 ≥ 青。だから:</p>
+
+<div class="eq">
+dist(u,b) ≥ D ✅
+</div>
+
+<!-- ================================================================ -->
+<h2>3. Case 2: s→u の経路が直径に触れない場合</h2>
+
+<p>経路は m に着く前に、茎 s–m の途中の点 <b>t</b> で分岐して u へ逸れる。</p>
+
+<div class="card">
+<svg viewBox="0 0 640 290" width="640">
+  <!-- diameter -->
+  <line x1="60"  y1="70" x2="320" y2="70" stroke="#1565c0" stroke-width="6" stroke-linecap="round"/>
+  <line x1="320" y1="70" x2="580" y2="70" stroke="#6a1b9a" stroke-width="6" stroke-linecap="round"/>
+  <!-- stem: m-t orange, t-s green -->
+  <line x1="320" y1="70"  x2="320" y2="155" stroke="#ef6c00" stroke-width="6" stroke-linecap="round"/>
+  <line x1="320" y1="155" x2="320" y2="245" stroke="#2e7d32" stroke-width="6" stroke-linecap="round"/>
+  <!-- branch t-u -->
+  <line x1="320" y1="155" x2="500" y2="235" stroke="#c62828" stroke-width="6" stroke-linecap="round"/>
+  <!-- nodes -->
+  <g font-size="16" font-weight="700" text-anchor="middle">
+    <circle cx="60"  cy="70"  r="17" fill="#fff" stroke="#1565c0" stroke-width="2.5"/>
+    <circle cx="320" cy="70"  r="17" fill="#fff" stroke="#26231f" stroke-width="2.5"/>
+    <circle cx="580" cy="70"  r="17" fill="#fff" stroke="#6a1b9a" stroke-width="2.5"/>
+    <circle cx="320" cy="155" r="17" fill="#fff" stroke="#26231f" stroke-width="2.5"/>
+    <circle cx="320" cy="245" r="17" fill="#fff" stroke="#2e7d32" stroke-width="2.5"/>
+    <circle cx="500" cy="235" r="17" fill="#fff" stroke="#c62828" stroke-width="2.5"/>
+    <text x="60"  y="75">a</text>
+    <text x="320" y="75">m</text>
+    <text x="580" y="75">b</text>
+    <text x="320" y="160">t</text>
+    <text x="320" y="250">s</text>
+    <text x="500" y="240">u</text>
+  </g>
+  <g font-size="12.5">
+    <text x="190" y="50" text-anchor="middle" fill="#1565c0">dist(m,a)</text>
+    <text x="450" y="50" text-anchor="middle" fill="#6a1b9a">dist(m,b)</text>
+    <text x="332" y="118" fill="#ef6c00">dist(t,m)</text>
+    <text x="332" y="208" fill="#2e7d32">dist(s,t)</text>
+    <text x="420" y="180" fill="#c62828">dist(t,u)</text>
+  </g>
+  <text x="320" y="280" text-anchor="middle" font-size="13" fill="#6b6560">s→u は 緑 → 赤。s→a は 緑 → 橙 → 青。赤い枝は直径に触れない。</text>
+</svg>
+</div>
+
+<div class="eq">
+dist(s,u) = <span class="g">dist(s,t)</span> + <span class="r">dist(t,u)</span><br>
+dist(s,a) = <span class="g">dist(s,t)</span> + <span class="o">dist(t,m)</span> + <span class="b">dist(m,a)</span>
+</div>
+
+<p>「u は最遠」で緑が消えて:</p>
+
+<div class="eq">
+<span class="r">dist(t,u)</span> ≥ <span class="o">dist(t,m)</span> + <span class="b">dist(m,a)</span> … (★★)
+</div>
+
+<p>u→b は 赤を戻って t → 橙で m → 紫で b:</p>
+
+<div class="eq">
+dist(u,b) = <span class="r">dist(t,u)</span> + <span class="o">dist(t,m)</span> + <span class="p">dist(m,b)</span><br>
+　　　　 ≥ (<span class="o">dist(t,m)</span> + <span class="b">dist(m,a)</span>) + <span class="o">dist(t,m)</span> + <span class="p">dist(m,b)</span> 　(★★を代入)<br>
+　　　　 = D + 2·<span class="o">dist(t,m)</span> ≥ D ✅
+</div>
+
+<p class="why">おまけ: D は最大なので dist(u,b) = D しかありえず、2·dist(t,m) = 0、つまり <b>t = m</b>。Case 2 は実は「c = m の Case 1」に潰れる。「直径に触れない遠回り」は存在できない、ということ。</p>
+
+<!-- ================================================================ -->
+<h2>4. 結論</h2>
+
+<div class="pt">
+<p style="margin:0">どちらの場合も <b>dist(u,b) ≥ D</b>。D は全ペアの最大だから <b>dist(u,b) = D</b>。<br>
+つまり <b>u は(b を相方とする)最遠ペアの端点</b>であり、②で u から最遠距離を測れば必ず D が返る。<br><br>
+セクション0の頂点6が掴まれる心配は、こうして消えた: もし 6 が s から最遠なら、この証明により dist(6, b) = D でなければならない。実際には dist(6,·) の最大は 3 &lt; 4 なので、<b>6 は最遠点になれない</b>。</p>
+</div>
+
+<p><b>タイの答え</b>も同じ証明から出る。証明中、u に使ったのは「s から最遠である」ことだけ。だから最遠点が複数いても、<b>どれを選んでも</b>それぞれが(何かを相方とする)直径の端点になっている。①のタイはどれを掴んでも安全。</p>
+
+<p><b>手描きメモとの対応</b>: 「外円になる」=「最遠点は葉」は補題として正しいが、それだけでは足りなかった。足りない分を埋めたのが(★)「<span class="r">枝の長さ</span> ≥ <span class="b">直径の残り</span>」— 枝が最遠点を生むほど長いなら、その枝はもう直径の一部、という手描きの直感の不等式版。</p>
+
+</main>
+</body>
+</html>
