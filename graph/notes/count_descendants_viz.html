@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>部分木の区間化: ABC202 E</title>
+<style>
+  :root {
+    --bg: #f6f5f1; --card: #fff; --ink: #26231f; --sub: #6b6560;
+    --line: #e3dfd8;
+    --green: #2e7d32; --orange: #ef6c00; --blue: #1565c0;
+    --red: #c62828; --purple: #6a1b9a; --accent: #8a5a00;
+    --hl: #fff3cd;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Hiragino Sans", "Noto Sans JP", sans-serif;
+    line-height: 1.9; font-size: 15.5px;
+  }
+  main { max-width: 880px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 25px; line-height: 1.5; margin: 8px 0 4px; }
+  .lede { color: var(--sub); margin: 0 0 24px; }
+  h2 { font-size: 19px; margin: 46px 0 12px; padding-top: 22px; border-top: 1px solid var(--line); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
+  svg { display: block; margin: 8px auto; max-width: 100%; height: auto; }
+  .cap { text-align: center; color: var(--sub); font-size: 13.5px; margin: 6px 0 0; }
+  .pt { background: #fdf6e7; border: 1px solid #ecd9ac; border-radius: 12px; padding: 14px 18px; margin: 16px 0; }
+  .pt b { color: var(--accent); }
+  code, .mono {
+    background: #efece6; border-radius: 5px; padding: 1px 6px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+  }
+  table { border-collapse: collapse; margin: 10px auto; font-size: 14px; }
+  th, td { border: 1px solid var(--line); padding: 5px 14px; text-align: center; }
+  th { background: #efece6; font-weight: 700; }
+  button {
+    font: inherit; font-size: 14px; padding: 7px 16px; margin: 3px;
+    border: 1px solid var(--line); border-radius: 9px; background: var(--card);
+    cursor: pointer;
+  }
+  button:hover { background: #efece6; }
+  button.active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .note {
+    min-height: 3.2em; background: var(--hl); border: 1px solid #ecd9ac;
+    border-radius: 9px; padding: 8px 14px; margin: 10px 0; font-size: 14.5px;
+  }
+  .stackrow { display: flex; align-items: center; gap: 6px; justify-content: center; margin: 10px 0; flex-wrap: wrap; }
+  .stackrow .lbl { color: var(--sub); font-size: 13.5px; margin-right: 4px; }
+  .cell {
+    width: 40px; height: 40px; border: 2px solid var(--ink); border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 17px; background: var(--card);
+  }
+  .cell.top { border-color: var(--red); color: var(--red); }
+  .ctrl { text-align: center; margin: 8px 0; }
+  .qinfo { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px; line-height: 2.1; }
+  .g { color: var(--green); font-weight: 700; } .o { color: var(--orange); font-weight: 700; }
+  .b { color: var(--blue); font-weight: 700; } .r { color: var(--red); font-weight: 700; }
+  .p { color: var(--purple); font-weight: 700; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>部分木を「区間」に変える<br><span style="font-size:18px;color:var(--sub)">ABC202 E Count Descendants の仕掛け</span></h1>
+<p class="lede">クエリ (U, D) = 「U の部分木にいる、深さちょうど D の頂点数」。鍵は、頂点に番号を振り直すと部分木が連続区間になること。題材は入力例1(以下すべて1-indexed)。</p>
+
+<!-- ============================================================ -->
+<h2>0. 何に困っていたか</h2>
+<p>「u は U の部分木にいるか?」を頂点番号のまま考えると、2 の部分木は <b>{2, 4, 5, 6, 7}</b> — 飛び飛びの集合で、所属判定は木を歩くしかない(クエリごとに O(N))。これを「<b>数の比較1回</b>」に変えたい、というのが出発点。</p>
+
+<!-- ============================================================ -->
+<h2>1. スタック走査で番号を振り直す(ステップ実行)</h2>
+<p>いつものスタック走査で、<b>pop された順に 0, 1, 2, … と番号</b>(=行きがけ番号)を配ります。2 の部分木(オレンジの頂点)の番号がどう並ぶかに注目してください。</p>
+
+<div class="card">
+<svg id="treesvg" viewBox="0 0 560 360" width="560">
+  <g stroke="#9c958d" stroke-width="2.5">
+    <line x1="300" y1="60"  x2="190" y2="150"/>
+    <line x1="300" y1="60"  x2="410" y2="150"/>
+    <line x1="190" y1="150" x2="100" y2="250"/>
+    <line x1="190" y1="150" x2="190" y2="250"/>
+    <line x1="190" y1="150" x2="280" y2="250"/>
+    <line x1="100" y1="250" x2="100" y2="330"/>
+  </g>
+  <!-- nodes: data-v = vertex id -->
+  <g id="nodes" font-weight="700" text-anchor="middle">
+    <g data-v="1"><circle cx="300" cy="60"  r="20" fill="#fff" stroke="#26231f" stroke-width="2.5"/><text x="300" y="66" font-size="17">1</text></g>
+    <g data-v="2"><circle cx="190" cy="150" r="20" fill="#fde8d2" stroke="#ef6c00" stroke-width="2.5"/><text x="190" y="156" font-size="17">2</text></g>
+    <g data-v="3"><circle cx="410" cy="150" r="20" fill="#fff" stroke="#26231f" stroke-width="2.5"/><text x="410" y="156" font-size="17">3</text></g>
+    <g data-v="4"><circle cx="100" cy="250" r="20" fill="#fde8d2" stroke="#ef6c00" stroke-width="2.5"/><text x="100" y="256" font-size="17">4</text></g>
+    <g data-v="5"><circle cx="190" cy="250" r="20" fill="#fde8d2" stroke="#ef6c00" stroke-width="2.5"/><text x="190" y="256" font-size="17">5</text></g>
+    <g data-v="7"><circle cx="280" cy="250" r="20" fill="#fde8d2" stroke="#ef6c00" stroke-width="2.5"/><text x="280" y="256" font-size="17">7</text></g>
+    <g data-v="6"><circle cx="100" cy="330" r="20" fill="#fde8d2" stroke="#ef6c00" stroke-width="2.5"/><text x="100" y="336" font-size="17">6</text></g>
+  </g>
+  <!-- number badges, shown as assigned. data-b = vertex id -->
+  <g id="badges" font-size="13" font-weight="700" text-anchor="middle">
+    <g data-b="1" visibility="hidden"><circle cx="328" cy="46"  r="13" fill="#1565c0"/><text x="328" y="51"  fill="#fff">0</text></g>
+    <g data-b="2" visibility="hidden"><circle cx="218" cy="136" r="13" fill="#1565c0"/><text x="218" y="141" fill="#fff">2</text></g>
+    <g data-b="3" visibility="hidden"><circle cx="438" cy="136" r="13" fill="#1565c0"/><text x="438" y="141" fill="#fff">1</text></g>
+    <g data-b="4" visibility="hidden"><circle cx="128" cy="236" r="13" fill="#1565c0"/><text x="128" y="241" fill="#fff">5</text></g>
+    <g data-b="5" visibility="hidden"><circle cx="218" cy="236" r="13" fill="#1565c0"/><text x="218" y="241" fill="#fff">4</text></g>
+    <g data-b="7" visibility="hidden"><circle cx="308" cy="236" r="13" fill="#1565c0"/><text x="308" y="241" fill="#fff">3</text></g>
+    <g data-b="6" visibility="hidden"><circle cx="128" cy="316" r="13" fill="#1565c0"/><text x="128" y="321" fill="#fff">6</text></g>
+  </g>
+  <text x="470" y="330" font-size="13" fill="#6b6560">黒丸 = 頂点番号</text>
+  <text x="470" y="350" font-size="13" fill="#1565c0">青丸 = 行きがけ番号</text>
+</svg>
+
+<div class="stackrow"><span class="lbl">スタック(右が上):</span><span id="stackbox"></span></div>
+<div class="note" id="stepnote"></div>
+<div class="ctrl">
+  <button id="prev">◀ 前へ</button>
+  <span class="mono" id="stepno"></span>
+  <button id="next">次へ ▶</button>
+</div>
+</div>
+
+<p>最後まで進めると、オレンジの頂点(2 の部分木)の青番号が <b>2, 3, 4, 5, 6 — 連続</b>になっているのが見えます。理由はスタックの LIFO: 2 を pop した瞬間、2 の子たちは<b>待っていた兄弟(下の方)より上</b>に積まれるので、2 の子孫が尽きるまで兄弟に手が届きません。「部分木を描き切ってから隣へ」をスタックが勝手に保証しています。</p>
+
+<!-- ============================================================ -->
+<h2>2. 2冊の辞書 — order と ins</h2>
+<p>この番号付けで生まれる対応は<b>双方向</b>で、実装では辞書(配列)が2冊できます。今日いちばん事故が起きた場所です。</p>
+
+<table>
+<tr><th></th><th>添字</th><th>値</th><th>答える質問</th><th>使い道</th></tr>
+<tr><td><code>order[i]</code></td><td>順番 i</td><td>頂点</td><td>「i 番目に pop されたのは誰?」</td><td>逆読み納品・行きがけ順のループ</td></tr>
+<tr><td><code>ins[v]</code></td><td>頂点 v</td><td>順番</td><td>「頂点 v は何番目?」</td><td>区間の端 <code>ins[U]</code>・リストに積む値</td></tr>
+</table>
+
+<table>
+<tr><th>i(順番)</th><td>0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td></tr>
+<tr><th>order[i](頂点)</th><td>1</td><td>3</td><td>2</td><td>7</td><td>5</td><td>4</td><td>6</td></tr>
+</table>
+
+<div class="pt"><b>事故の型</b>: 2冊は中身がどちらも usize なので、取り違えてもコンパイラは黙っている。「<code>ins</code> を回して値を頂点扱い」「<code>order</code> のつもりで <code>ins</code> を引く」— どちらも今日実際に踏んだ。迷ったら宣言行の「添字は何? 値は何?」コメントに戻る。</div>
+
+<!-- ============================================================ -->
+<h2>3. 部分木 = 連続区間 [ins[v], ins[v]+size[v])</h2>
+<p>番号の世界を数直線にすると、各頂点の部分木はこうなります(マスの中は <span class="b">行きがけ番号</span>、下の小さい字が頂点):</p>
+
+<div class="card">
+<svg viewBox="0 0 640 300" width="640">
+  <!-- number line cells: x = 60 + i*74 -->
+  <g font-weight="700" text-anchor="middle">
+    <g>
+      <rect x="60"  y="120" width="68" height="46" rx="8" fill="#fff" stroke="#26231f" stroke-width="2"/>
+      <rect x="134" y="120" width="68" height="46" rx="8" fill="#fff" stroke="#26231f" stroke-width="2"/>
+      <rect x="208" y="120" width="68" height="46" rx="8" fill="#fde8d2" stroke="#ef6c00" stroke-width="2"/>
+      <rect x="282" y="120" width="68" height="46" rx="8" fill="#fde8d2" stroke="#ef6c00" stroke-width="2"/>
+      <rect x="356" y="120" width="68" height="46" rx="8" fill="#fde8d2" stroke="#ef6c00" stroke-width="2"/>
+      <rect x="430" y="120" width="68" height="46" rx="8" fill="#fde8d2" stroke="#ef6c00" stroke-width="2"/>
+      <rect x="504" y="120" width="68" height="46" rx="8" fill="#fde8d2" stroke="#ef6c00" stroke-width="2"/>
+    </g>
+    <g font-size="18" fill="#1565c0">
+      <text x="94" y="149">0</text><text x="168" y="149">1</text><text x="242" y="149">2</text>
+      <text x="316" y="149">3</text><text x="390" y="149">4</text><text x="464" y="149">5</text><text x="538" y="149">6</text>
+    </g>
+    <g font-size="12.5" fill="#6b6560" font-weight="400">
+      <text x="94" y="186">頂点1</text><text x="168" y="186">頂点3</text><text x="242" y="186">頂点2</text>
+      <text x="316" y="186">頂点7</text><text x="390" y="186">頂点5</text><text x="464" y="186">頂点4</text><text x="538" y="186">頂点6</text>
+    </g>
+  </g>
+  <!-- interval brackets above -->
+  <g font-size="12.5" text-anchor="middle">
+    <rect x="60" y="30" width="512" height="20" rx="6" fill="#e3e9f5" stroke="#1565c0"/>
+    <text x="316" y="45" fill="#1565c0">1 の部分木 [0,7) — size 7</text>
+    <rect x="134" y="60" width="68" height="20" rx="6" fill="#efece6" stroke="#9c958d"/>
+    <text x="168" y="75" fill="#6b6560">3 [1,2)</text>
+    <rect x="208" y="60" width="364" height="20" rx="6" fill="#fde8d2" stroke="#ef6c00"/>
+    <text x="390" y="75" fill="#ef6c00">2 の部分木 [2,7) — size 5</text>
+    <rect x="430" y="90" width="142" height="20" rx="6" fill="#f3e6f5" stroke="#6a1b9a"/>
+    <text x="501" y="105" fill="#6a1b9a">4 の部分木 [5,7)</text>
+  </g>
+  <!-- depth row -->
+  <g font-size="12.5" text-anchor="middle" fill="#2e7d32">
+    <text x="60" y="235" text-anchor="start" font-weight="700">深さ:</text>
+    <text x="94" y="235">0</text><text x="168" y="235">1</text><text x="242" y="235">1</text>
+    <text x="316" y="235">2</text><text x="390" y="235">2</text><text x="464" y="235">2</text><text x="538" y="235">3</text>
+  </g>
+  <text x="60" y="270" text-anchor="start" font-size="13" fill="#6b6560">by_depth: 深さ0→[0]、深さ1→[1, 2]、深さ2→[3, 4, 5]、深さ3→[6](中身は行きがけ番号・昇順)</text>
+</svg>
+<p class="cap">区間同士は「丸ごと包含」か「無縁」のどちらかで、半端に重ならない — 木の入れ子がそのまま区間の入れ子に写る。始点は ins[v]、幅は size[v](典型90-039 の部分木サイズ)。</p>
+</div>
+
+<p>by_depth を<b>行きがけ順に積む</b>(= <code>order</code> を回す)と、各リストには番号が増える順に入る = <b>ソート済みが無料</b>。頂点番号順に回すとここが崩れる(深さ2を頂点番号順に積むと [5, 4, 3] — 降順)でした。</p>
+
+<!-- ============================================================ -->
+<h2>4. クエリを目で見る</h2>
+<p>クエリ (U, D) = 「<span class="o">U の区間</span>の中にある、<span class="g">深さ D のリスト</span>の番号は何個?」。入力例1の4クエリで確かめてください。</p>
+
+<div class="card">
+<div class="ctrl" id="qbtns">
+  <button data-q="0">(1, 2)</button>
+  <button data-q="1">(7, 2)</button>
+  <button data-q="2">(4, 1)</button>
+  <button data-q="3">(5, 5)</button>
+</div>
+<svg viewBox="0 0 640 210" width="640">
+  <!-- interval band -->
+  <rect id="qband" x="60" y="108" width="512" height="70" rx="10" fill="#fff3cd" stroke="#ecd9ac" visibility="hidden"/>
+  <g font-weight="700" text-anchor="middle">
+    <g id="qcells">
+      <rect x="60"  y="120" width="68" height="46" rx="8" fill="#fff" stroke="#26231f" stroke-width="2"/>
+      <rect x="134" y="120" width="68" height="46" rx="8" fill="#fff" stroke="#26231f" stroke-width="2"/>
+      <rect x="208" y="120" width="68" height="46" rx="8" fill="#fff" stroke="#26231f" stroke-width="2"/>
+      <rect x="282" y="120" width="68" height="46" rx="8" fill="#fff" stroke="#26231f" stroke-width="2"/>
+      <rect x="356" y="120" width="68" height="46" rx="8" fill="#fff" stroke="#26231f" stroke-width="2"/>
+      <rect x="430" y="120" width="68" height="46" rx="8" fill="#fff" stroke="#26231f" stroke-width="2"/>
+      <rect x="504" y="120" width="68" height="46" rx="8" fill="#fff" stroke="#26231f" stroke-width="2"/>
+    </g>
+    <g font-size="18" fill="#1565c0">
+      <text x="94" y="149">0</text><text x="168" y="149">1</text><text x="242" y="149">2</text>
+      <text x="316" y="149">3</text><text x="390" y="149">4</text><text x="464" y="149">5</text><text x="538" y="149">6</text>
+    </g>
+    <g font-size="12.5" fill="#6b6560" font-weight="400">
+      <text x="94" y="186">頂点1</text><text x="168" y="186">頂点3</text><text x="242" y="186">頂点2</text>
+      <text x="316" y="186">頂点7</text><text x="390" y="186">頂点5</text><text x="464" y="186">頂点4</text><text x="538" y="186">頂点6</text>
+    </g>
+  </g>
+  <text id="qbandlbl" x="316" y="95" text-anchor="middle" font-size="13.5" fill="#8a5a00" visibility="hidden">U の区間</text>
+</svg>
+<div class="note qinfo" id="qnote">クエリのボタンを押してください。</div>
+</div>
+
+<!-- ============================================================ -->
+<h2>5. 全体の組み立てとコードの対応</h2>
+<div class="pt">
+<b>前計算(全部 O(N))</b><br>
+① スタック走査1回で <code>order</code> / <code>ins</code> / <code>depth</code> を同時に作る<br>
+② <code>order</code> の逆読みで <code>sizes</code> を納品(典型90-039 そのまま)<br>
+③ <code>order</code> を回して <code>by_depth[depth[v]].push(ins[v])</code> — ソート済みが無料<br><br>
+<b>各クエリ O(log N)</b><br>
+④ d が範囲外なら 0(<code>continue</code> を忘れると二重 push + パニック)<br>
+⑤ <code>lo = ins[u]</code>, <code>hi = lo + sizes[u]</code> — 区間はいつも半開 [lo, hi)<br>
+⑥ 個数 = <code>pp(|&amp;x| x &lt; hi) − pp(|&amp;x| x &lt; lo)</code> — 「未満」2本の引き算(partition_point の約束: 述語は先頭側 true・後ろ側 false)
+</div>
+<p>合計 O(N + Q log N)。新しい道具は「行きがけ順の区間化」1個だけで、残りはスタック走査(DFS編)+ size の納品(039)+ 二分探索(binary_search編)の持ち寄りでした。</p>
+
+<script>
+(function () {
+  // ---- section 1: step player ----
+  var steps = [
+    { stack: [1], assigned: [], pop: null,
+      note: "スタート: 根1だけが積まれている。番号カウンタは0。" },
+    { stack: [2, 3], assigned: [1], pop: 1,
+      note: "1をpop → 番号0。子の2,3を上に積む。" },
+    { stack: [2], assigned: [1, 3], pop: 3,
+      note: "一番上の3が先に出る → 番号1(兄弟の順序は不問、でした)。3は葉なので何も積まない。" },
+    { stack: [4, 5, 7], assigned: [1, 3, 2], pop: 2,
+      note: "2をpop → 番号2。子の4,5,7を上に積む。ここから先、スタックの上側は2の子孫だけ — 兄弟はもう残っていない。" },
+    { stack: [4, 5], assigned: [1, 3, 2, 7], pop: 7,
+      note: "7 → 番号3。2の子孫が連続で出始める。" },
+    { stack: [4], assigned: [1, 3, 2, 7, 5], pop: 5,
+      note: "5 → 番号4。まだ2の子孫。" },
+    { stack: [6], assigned: [1, 3, 2, 7, 5, 4], pop: 4,
+      note: "4 → 番号5。4の子6がさらに上に積まれる(孫も割り込んで連続を保つ)。" },
+    { stack: [], assigned: [1, 3, 2, 7, 5, 4, 6], pop: 6,
+      note: "6 → 番号6で終了。2の部分木 {2,7,5,4,6} の番号は 2,3,4,5,6 — 連続区間 [2,7) になった。幅5 = size[2]。" }
+  ];
+  var cur = 0;
+  var stackbox = document.getElementById("stackbox");
+  var stepnote = document.getElementById("stepnote");
+  var stepno = document.getElementById("stepno");
+
+  function render() {
+    var s = steps[cur];
+    // badges
+    document.querySelectorAll("#badges > g").forEach(function (b) {
+      var v = +b.getAttribute("data-b");
+      b.setAttribute("visibility", s.assigned.indexOf(v) >= 0 ? "visible" : "hidden");
+    });
+    // highlight popped node
+    document.querySelectorAll("#nodes > g").forEach(function (g) {
+      var c = g.querySelector("circle");
+      c.setAttribute("stroke-width", (+g.getAttribute("data-v") === s.pop) ? "5" : "2.5");
+    });
+    // stack
+    stackbox.innerHTML = "";
+    if (s.stack.length === 0) {
+      stackbox.innerHTML = '<span style="color:var(--sub)">(空)</span>';
+    }
+    s.stack.forEach(function (v, i) {
+      var d = document.createElement("span");
+      d.className = "cell" + (i === s.stack.length - 1 ? " top" : "");
+      d.textContent = v;
+      stackbox.appendChild(d);
+    });
+    stepnote.textContent = s.note;
+    stepno.textContent = (cur) + " / " + (steps.length - 1);
+  }
+  document.getElementById("prev").onclick = function () { if (cur > 0) { cur--; render(); } };
+  document.getElementById("next").onclick = function () { if (cur < steps.length - 1) { cur++; render(); } };
+  render();
+
+  // ---- section 4: query viewer ----
+  // cells by preorder number i: x = 60 + 74*i, width 68
+  // by_depth (ins値): d0:[0], d1:[1,2], d2:[3,4,5], d3:[6]
+  var byDepth = [[0], [1, 2], [3, 4, 5], [6]];
+  var queries = [
+    { u: 1, d: 2, lo: 0, hi: 7 },
+    { u: 7, d: 2, lo: 3, hi: 4 },
+    { u: 4, d: 1, lo: 5, hi: 7 },
+    { u: 5, d: 5, lo: 4, hi: 5, guard: true }
+  ];
+  var qband = document.getElementById("qband");
+  var qbandlbl = document.getElementById("qbandlbl");
+  var qnote = document.getElementById("qnote");
+  var qcells = document.querySelectorAll("#qcells rect");
+
+  function showQuery(k) {
+    var q = queries[k];
+    document.querySelectorAll("#qbtns button").forEach(function (b, i) {
+      b.className = (i === k) ? "active" : "";
+    });
+    qcells.forEach(function (c) { c.setAttribute("fill", "#fff"); c.setAttribute("stroke", "#26231f"); });
+    if (q.guard) {
+      qband.setAttribute("visibility", "hidden");
+      qbandlbl.setAttribute("visibility", "hidden");
+      qnote.innerHTML = "(5, 5): d = 5 は by_depth の範囲外(深さは0〜3しかない)→ <b>ガードで即 0</b>。" +
+        "リストを引く前に弾かないと添字パニック — サンプルがこの罠を踏ませてくれる。";
+      return;
+    }
+    qband.setAttribute("x", 60 + 74 * q.lo - 4);
+    qband.setAttribute("width", 74 * (q.hi - q.lo) - 6 + 8);
+    qband.setAttribute("visibility", "visible");
+    qbandlbl.setAttribute("x", 60 + 74 * q.lo + (74 * (q.hi - q.lo)) / 2);
+    qbandlbl.textContent = "頂点" + q.u + " の区間 [" + q.lo + ", " + q.hi + ")";
+    qbandlbl.setAttribute("visibility", "visible");
+    var lst = byDepth[q.d];
+    var cnt = 0;
+    lst.forEach(function (x) {
+      var inRange = (q.lo <= x && x < q.hi);
+      if (inRange) cnt++;
+      qcells[x].setAttribute("stroke", "#2e7d32");
+      qcells[x].setAttribute("fill", inRange ? "#d9ead3" : "#fff");
+    });
+    var ppHi = lst.filter(function (x) { return x < q.hi; }).length;
+    var ppLo = lst.filter(function (x) { return x < q.lo; }).length;
+    qnote.innerHTML =
+      "(" + q.u + ", " + q.d + "): lo = ins[" + q.u + "] = " + q.lo +
+      ", hi = lo + sizes[" + q.u + "] = " + q.hi + "<br>" +
+      "by_depth[" + q.d + "] = [" + lst.join(", ") + "](緑枠)。黄色い帯 = U の区間、" +
+      "<b>緑塗り = 両方に入った頂点</b><br>" +
+      "答え = (hi未満の個数 " + ppHi + ") − (lo未満の個数 " + ppLo + ") = <b>" + cnt + "</b>";
+  }
+  document.querySelectorAll("#qbtns button").forEach(function (b, i) {
+    b.onclick = function () { showQuery(i); };
+  });
+})();
+</script>
+
+</main>
+</body>
+</html>
